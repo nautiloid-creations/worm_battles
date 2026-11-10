@@ -1,0 +1,307 @@
+:root {
+  --bg-dark: #0c0a18;
+  --panel-bg: #151226;
+  --card-bg: #1e1a36;
+  --border-color: #342d5c;
+  --text-main: #f0f4ff;
+  --text-muted: #9ba3c7;
+  --hero-accent: #2dd2ff;
+  --boss-accent: #ff4785;
+  --active-green: #4eff91;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg-dark);
+  color: var(--text-main);
+  font-family: 'JetBrains Mono', monospace;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#app {
+  display: grid;
+  grid-template-columns: 1fr 410px;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Stage Viewport */
+.stage-viewport {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: radial-gradient(circle at center, #1f163b 0%, #090712 100%);
+  position: relative;
+}
+
+.canvas-frame {
+  width: 100%;
+  max-width: 1120px;
+  aspect-ratio: 16 / 9;
+  border: 4px solid #3c346e;
+  border-radius: 6px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.75), 0 0 28px rgba(99, 230, 255, 0.12);
+  overflow: hidden;
+  background: #120d24;
+  display: flex;
+}
+
+#battle-canvas {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  display: block;
+}
+
+.stage-caption {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  gap: 20px;
+}
+
+.stage-caption kbd {
+  background: #282249;
+  border: 1px solid #4e4487;
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: #fff;
+  font-weight: 700;
+}
+
+/* Right Control Sidebar */
+.sidebar-panel {
+  background: var(--panel-bg);
+  border-left: 2px solid var(--border-color);
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-header h1 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  color: #fff;
+}
+
+.step-badge {
+  font-size: 10px;
+  font-weight: 700;
+  background: #2d2556;
+  color: #a99cff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #4a3e85;
+}
+
+.control-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-title-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.control-card h2 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.folder-tag {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 3px 6px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+/* Press & Hold Attack Button */
+.hold-attack-btn {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
+  color: #fff;
+  transition: transform 0.06s ease, box-shadow 0.1s ease, background 0.1s ease;
+}
+
+.hold-attack-btn.hero-accent {
+  background: linear-gradient(180deg, #136f99 0%, #0c4b6e 100%);
+  border-color: var(--hero-accent);
+}
+
+.hold-attack-btn.boss-accent {
+  background: linear-gradient(180deg, #9c1f4e 0%, #6b1234 100%);
+  border-color: var(--boss-accent);
+}
+
+.hold-attack-btn.is-holding {
+  transform: translateY(2px) scale(0.99);
+  box-shadow: 0 0 18px rgba(255, 240, 110, 0.65);
+  border-color: #fff36b;
+  background: linear-gradient(180deg, #d48817 0%, #9c5308 100%);
+}
+
+.hold-attack-btn .btn-main {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hold-attack-btn .btn-sub {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* 4-Button State Grid */
+.state-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.state-btn {
+  cursor: pointer;
+  background: #272247;
+  border: 1px solid #3f386e;
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 7px 8px;
+  border-radius: 5px;
+  transition: background 0.1s ease, border-color 0.1s ease;
+}
+
+.state-btn:hover {
+  background: #322c59;
+}
+
+.state-btn.active-state {
+  background: #3a3173;
+  border-color: var(--active-green);
+  color: var(--active-green);
+}
+
+/* 6-Sprite Active File Monitor Pills */
+.monitor-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+
+.pill-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+.file-pill {
+  font-size: 10px;
+  text-align: center;
+  padding: 4px 4px;
+  border-radius: 4px;
+  background: #120f21;
+  border: 1px solid #2b254a;
+  color: var(--text-muted);
+}
+
+.file-pill.active-pill {
+  background: rgba(78, 255, 145, 0.16);
+  border-color: var(--active-green);
+  color: var(--active-green);
+  font-weight: 700;
+}
+
+/* Settings & Sliders */
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.slider-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.slider-header strong {
+  color: var(--text-main);
+}
+
+input[type='range'] {
+  width: 100%;
+  accent-color: var(--hero-accent);
+  cursor: pointer;
+}
+
+.reload-btn {
+  cursor: pointer;
+  margin-top: 4px;
+  padding: 9px 10px;
+  background: #272247;
+  border: 1px solid #4c4385;
+  border-radius: 6px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.reload-btn:hover {
+  background: #352e61;
+}

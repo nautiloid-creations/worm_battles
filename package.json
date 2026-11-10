@@ -1,0 +1,18 @@
+{
+  "name": "worm-battles",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "generate-assets": "node scripts/generate_placeholders.mjs",
+    "import-sheets": "node scripts/import_spritesheets.mjs",
+    "sprite-studio": "node scripts/sprite_studio.mjs",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vite": "^6.0.0"
+  }
+}
