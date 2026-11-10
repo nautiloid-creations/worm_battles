@@ -23,11 +23,11 @@ export interface SpriteActorConfig {
   id: string;
   name: string;
   folderPath: string; // e.g. '/assets/heroes/guitar_1'
-  homeX: number; // Bottom-center X in 320x180 stage coordinates
-  homeY: number; // Bottom-center Y (feet position) in 320x180 stage coordinates
-  targetHeight: number; // Normalized on-screen height in stage pixels
+  homeX: number; // Bottom-center X in stage coordinates
+  homeY: number; // Bottom-center Y (feet position) in stage coordinates
+  heightFraction: number; // Normalized height as a fraction of canvas height (e.g. 0.42 = 42%)
   facing: 'right' | 'left';
-  lungeDistance: number; // How far to step forward during attack
+  lungeDistance: number; // How far to step forward during attack in stage pixels
   availablePoses?: SpriteKey[]; // Optional custom pose list (defaults to ALL_SPRITE_KEYS)
 }
 
@@ -35,6 +35,10 @@ export class SpriteActor {
   public config: SpriteActorConfig;
   public state: ActorState = 'idle';
   public frameIndex: 0 | 1 = 0;
+
+  public heightFraction: number;
+  public currentX: number;
+  public currentY: number;
 
   // Timing configuration
   public idleIntervalMs = 450; // ~133 BPM bounce
@@ -44,7 +48,8 @@ export class SpriteActor {
   private frameTimerMs = 0;
   private hitFlashTimerMs = 0;
   private hitShakeTimerMs = 0;
-  private currentOffsetX = 0;
+  private hitAutoRecoveryTimerMs = 0;
+  public isManuallyLatched = false;
 
   // Loaded HTMLImageElement map + white silhouette canvas cache
   private sprites: Partial<Record<SpriteKey, HTMLImageElement>> = {};
@@ -56,6 +61,14 @@ export class SpriteActor {
 
   constructor(config: SpriteActorConfig) {
     this.config = { ...config };
+    this.heightFraction = config.heightFraction;
+    this.currentX = config.homeX;
+    this.currentY = config.homeY;
+  }
+
+  public setHome(x: number, y: number): void {
+    this.config.homeX = x;
+    this.config.homeY = y;
   }
 
   /**
@@ -113,9 +126,10 @@ export class SpriteActor {
   public setState(nextState: ActorState): void {
     if (this.state === nextState) {
       if (nextState === 'hit') {
-        // Re-trigger flash and shake if hit again while already in hit state
+        // Re-trigger flash, shake, and reset auto-recovery window
         this.hitFlashTimerMs = 110;
         this.hitShakeTimerMs = 220;
+        this.hitAutoRecoveryTimerMs = 320;
       }
       return;
     }
@@ -127,6 +141,7 @@ export class SpriteActor {
     if (nextState === 'hit') {
       this.hitFlashTimerMs = 110;
       this.hitShakeTimerMs = 220;
+      this.hitAutoRecoveryTimerMs = 320;
     }
 
     if (nextState === 'attack' && this.onAttackFrameToggle) {
@@ -176,52 +191,57 @@ export class SpriteActor {
       }
     }
 
-    // 2. Smoothly step forward when attacking, return to 0 otherwise
+    // 2. Smooth position lerping for slot swaps and attack/ultimate lunges
+    const isLunging = this.state === 'attack' || this.state === 'ultimate';
     const dir = this.config.facing === 'right' ? 1 : -1;
-    const targetOffsetX =
-      this.state === 'attack' ? dir * this.config.lungeDistance : 0;
-    const lerpSpeed = Math.min(1, dtMs * 0.025);
-    this.currentOffsetX += (targetOffsetX - this.currentOffsetX) * lerpSpeed;
+    const targetX = this.config.homeX + (isLunging ? dir * this.config.lungeDistance : 0);
+    const targetY = this.config.homeY;
 
-    // 3. Decrement hit flash & shake timers
+    const lerpSpeed = Math.min(1, dtMs * 0.018);
+    this.currentX += (targetX - this.currentX) * lerpSpeed;
+    this.currentY += (targetY - this.currentY) * lerpSpeed;
+
+    // 3. Decrement hit flash & shake timers, and auto-recover from hit if not manually latched
     if (this.hitFlashTimerMs > 0) {
       this.hitFlashTimerMs = Math.max(0, this.hitFlashTimerMs - dtMs);
     }
     if (this.hitShakeTimerMs > 0) {
       this.hitShakeTimerMs = Math.max(0, this.hitShakeTimerMs - dtMs);
     }
+    if (this.state === 'hit' && !this.isManuallyLatched) {
+      this.hitAutoRecoveryTimerMs -= dtMs;
+      if (this.hitAutoRecoveryTimerMs <= 0) {
+        this.setState('idle');
+      }
+    }
   }
 
-  public draw(ctx: CanvasRenderingContext2D): void {
+  public draw(ctx: CanvasRenderingContext2D, canvasHeight: number): void {
     const key = this.getActiveSpriteKey();
     const img = this.sprites[key];
-    if (!img || !img.naturalHeight) return;
+    if (!img || !img.naturalHeight || !img.naturalWidth) return;
 
-    // Automatic height normalization preserving aspect ratio
-    const scale = this.config.targetHeight / img.naturalHeight;
-    const drawW = Math.round(img.naturalWidth * scale);
-    const drawH = Math.round(this.config.targetHeight);
+    // 1. Calculate display height as a direct fraction of canvas height
+    const displayH = Math.round(canvasHeight * this.heightFraction);
+    const displayW = Math.max(1, Math.round(img.naturalWidth * (displayH / img.naturalHeight)));
 
-    // Compute horizontal shake if in hit recovery
     let shakeX = 0;
     if (this.hitShakeTimerMs > 0) {
       shakeX = Math.sin(this.hitShakeTimerMs * 0.15) * 3;
     }
 
-    const drawX = Math.round(
-      this.config.homeX + this.currentOffsetX + shakeX - drawW / 2
-    );
-    const drawY = Math.round(this.config.homeY - drawH);
+    const drawX = Math.round(this.currentX + shakeX - displayW / 2);
+    const drawY = Math.round(this.currentY - displayH);
 
     ctx.save();
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+    ctx.drawImage(img, drawX, drawY, displayW, displayH);
 
-    // Draw crisp white hit-flash overlay right when hit lands
+    // If hit flash is active, overlay white silhouette
     const whiteMask = this.whiteSilhouettes[key];
     if (this.hitFlashTimerMs > 0 && whiteMask) {
-      ctx.globalAlpha = 0.75;
-      ctx.drawImage(whiteMask, drawX, drawY, drawW, drawH);
+      ctx.globalAlpha = 0.78;
+      ctx.drawImage(whiteMask, drawX, drawY, displayW, displayH);
     }
     ctx.restore();
   }
