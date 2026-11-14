@@ -1,0 +1,73 @@
+{
+  "actorId": "hero_guitar_1",
+  "name": "Solo of the Dragon Sun",
+  "durationMs": 3800,
+  "keyframes": [
+    {
+      "timeMs": 0,
+      "actorPose": "idle_1",
+      "dimArena": 0.2
+    },
+    {
+      "timeMs": 400,
+      "actorPose": "ultimate",
+      "actorXOffset": 15,
+      "actorYOffset": -12,
+      "dimArena": 0.65,
+      "warp": {
+        "type": "scanline_undulation",
+        "target": "background",
+        "amplitude": 14,
+        "frequency": 0.045,
+        "speed": 0.008,
+        "durationMs": 2800
+      }
+    },
+    {
+      "timeMs": 1100,
+      "actorPose": "attack_1",
+      "actorXOffset": 28,
+      "spawnFx": {
+        "fxId": "fx_fireball",
+        "paletteName": "Solar Flame",
+        "size": 96,
+        "xFrac": 0.5,
+        "yFrac": 0.62,
+        "facing": "right",
+        "durationMs": 1400
+      },
+      "screenShake": {
+        "intensity": 6,
+        "durationMs": 400
+      }
+    },
+    {
+      "timeMs": 2200,
+      "actorPose": "attack_2",
+      "actorXOffset": 34,
+      "flashWhite": true,
+      "bossReaction": "hit",
+      "screenShake": {
+        "intensity": 10,
+        "durationMs": 500
+      },
+      "spawnFx": {
+        "fxId": "fx_note_quarter",
+        "paletteName": "Chrome & Blood",
+        "size": 64,
+        "xFrac": 0.72,
+        "yFrac": 0.58,
+        "facing": "right",
+        "durationMs": 1000
+      }
+    },
+    {
+      "timeMs": 3400,
+      "actorPose": "idle_1",
+      "actorXOffset": 0,
+      "actorYOffset": 0,
+      "dimArena": 0,
+      "bossReaction": "idle"
+    }
+  ]
+}

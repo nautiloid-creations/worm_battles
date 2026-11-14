@@ -4,3 +4,5 @@ dist/
 .env.*
 .DS_Store
 .gemini_image_quota.json
+scratch_*.mjs
+scratch*.mjs

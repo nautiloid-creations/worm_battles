@@ -3,7 +3,7 @@
 ## Character
 - white male, 35 year old
 - athletic build
-- black tshirt, workout shorts, black tennis shoes with white stripes
+- black tshirt, workout shorts, black tennis shoes with white stripes, black smartwatch on right hand
 
 ## Instrument
 - 5 piece drum set, chrome shells
@@ -16,10 +16,12 @@
 - CRITICAL CONSISTENCY: Drum set dimensions, hardware design, and character scale must be strictly consistent across ALL sprites.
 
 ## Poses
-- **`IDLE_1`**: facing camera, sticks at the ready hovering over drums
+- **`IDLE_1`**: facing right, sticks at the ready hovering over drums
 - **`IDLE_2`**: natural breathing idle: head, torso, and hands/drumsticks display subtle realistic movement
 - **`ATTACK_1`**: Drummer's right arm (viewer's left) is striking down with drumstick IN DIRECT PHYSICAL CONTACT with the floor tom (the drum closest to the left side of the image). Left arm (viewer's right) is held high in the air poised with drumstick. Head faces slightly right (matching ATTACK_2). Absolutely NO hit sparks or effects. Slightly aggressive expression.
 - **`ATTACK_2`**: Drummer's left arm (viewer's right) is striking down with drumstick IN DIRECT PHYSICAL CONTACT with the rightmost cymbal (viewer's right). Right arm (viewer's left) is held high in the air (alternating strike with ATTACK_1). Head must face slightly right (matching ATTACK_1 to prevent head whipping). Absolutely NO hit sparks or effects. Slightly aggressive expression e.g. teeth bared.
-- **`ULTIMATE`**: facing camera, arms overhead with drumsticks angled inward toward each other so tips almost touch in the middle above his head (sticks pointing inward to prevent cropping), looking upward slightly
+- **`ULTIMATE_1`**: arms overhead, hands open (no drumsticks), slightly aggresive expression.
+- **`ULTIMATE_2`**: Similar, with a 2nd set of arms (still hands open).
+- **`ULTIMATE_3`**: Similar, with yet another set of arms (still hands open).
 - **`HIT`**: similar to IDLE_1 but as if the character has just been hit. eyes flinching and body reeling back.
 - **`DOWN`**: defeated pose, head resting down on the tom, right shoulder and arm dropped lower hanging in front of the kit, sticks in hand. Bass drum circular and unwarped.

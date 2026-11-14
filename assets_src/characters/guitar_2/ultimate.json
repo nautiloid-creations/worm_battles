@@ -1,0 +1,64 @@
+{
+  "actorId": "hero_guitar_2",
+  "name": "Plasma Lightning Tempest",
+  "durationMs": 3800,
+  "keyframes": [
+    {
+      "timeMs": 0,
+      "actorPose": "idle_1",
+      "dimArena": 0.2
+    },
+    {
+      "timeMs": 400,
+      "actorPose": "ultimate",
+      "actorXOffset": 16,
+      "actorYOffset": -10,
+      "dimArena": 0.7,
+      "warp": {
+        "type": "scanline_undulation",
+        "target": "background",
+        "amplitude": 16,
+        "frequency": 0.05,
+        "speed": 0.01,
+        "durationMs": 2700
+      }
+    },
+    {
+      "timeMs": 1200,
+      "actorPose": "attack_1",
+      "actorXOffset": 30,
+      "spawnFx": {
+        "fxId": "fx_orb_lightning",
+        "paletteName": "Electric Plasma",
+        "size": 112,
+        "xFrac": 0.52,
+        "yFrac": 0.6,
+        "facing": "right",
+        "durationMs": 1600
+      },
+      "screenShake": {
+        "intensity": 8,
+        "durationMs": 400
+      }
+    },
+    {
+      "timeMs": 2300,
+      "actorPose": "attack_2",
+      "actorXOffset": 36,
+      "flashWhite": true,
+      "bossReaction": "hit",
+      "screenShake": {
+        "intensity": 12,
+        "durationMs": 500
+      }
+    },
+    {
+      "timeMs": 3400,
+      "actorPose": "idle_1",
+      "actorXOffset": 0,
+      "actorYOffset": 0,
+      "dimArena": 0,
+      "bossReaction": "idle"
+    }
+  ]
+}

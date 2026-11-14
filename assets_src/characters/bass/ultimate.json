@@ -1,0 +1,50 @@
+{
+  "actorId": "hero_bass",
+  "name": "Cosmic Void Event Horizon",
+  "durationMs": 4000,
+  "keyframes": [
+    {
+      "timeMs": 0,
+      "actorPose": "idle_1",
+      "dimArena": 0.3
+    },
+    {
+      "timeMs": 500,
+      "actorPose": "ultimate",
+      "dimArena": 0.8,
+      "warp": {
+        "type": "void_vortex",
+        "target": "all",
+        "amplitude": 22,
+        "frequency": 0.06,
+        "speed": 0.012,
+        "durationMs": 2600
+      },
+      "spawnFx": {
+        "fxId": "fx_orb_crackling",
+        "paletteName": "Void Magic",
+        "size": 128,
+        "xFrac": 0.5,
+        "yFrac": 0.6,
+        "durationMs": 2500
+      }
+    },
+    {
+      "timeMs": 2000,
+      "actorPose": "attack_1",
+      "actorXOffset": 25,
+      "flashWhite": true,
+      "bossReaction": "hit",
+      "screenShake": {
+        "intensity": 14,
+        "durationMs": 600
+      }
+    },
+    {
+      "timeMs": 3500,
+      "actorPose": "idle_1",
+      "dimArena": 0,
+      "bossReaction": "idle"
+    }
+  ]
+}

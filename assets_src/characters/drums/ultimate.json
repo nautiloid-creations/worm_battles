@@ -1,0 +1,286 @@
+{
+  "actorId": "hero_drums",
+  "name": "Shiva's Fury",
+  "durationMs": 4600,
+  "keyframes": [
+    {
+      "timeMs": 0,
+      "actorPose": "idle_1",
+      "dimArena": 0
+    },
+    {
+      "timeMs": 500,
+      "actorPose": "ultimate_1",
+      "dimArena": 0.5,
+      "screenShake": {
+        "intensity": 6,
+        "durationMs": 400
+      }
+    },
+    {
+      "timeMs": 1000,
+      "actorPose": "ultimate_2",
+      "screenShake": {
+        "intensity": 6,
+        "durationMs": 400
+      }
+    },
+    {
+      "timeMs": 1500,
+      "actorPose": "ultimate_3",
+      "dimArena": 0.5,
+      "screenShake": {
+        "intensity": 6,
+        "durationMs": 400
+      }
+    },
+    {
+      "timeMs": 2000,
+      "actorPose": "ultimate_3",
+      "actorXOffset": 0,
+      "actorYOffset": 0,
+      "dimArena": 0.5,
+      "spawnFx": {
+        "fxId": "fx_orb_fire",
+        "paletteName": "Dark Flame",
+        "size": 32,
+        "xFrac": 0.37,
+        "yFrac": 0.45,
+        "facing": "right",
+        "durationMs": 1000
+      },
+      "warp": {
+        "type": "scanline_undulation",
+        "target": "background",
+        "amplitude": 8,
+        "frequency": 0.1,
+        "speed": 0.01,
+        "durationMs": 2000
+      }
+    },
+    {
+      "timeMs": 2150,
+      "actorPose": "ultimate_3",
+      "actorXOffset": 0,
+      "actorYOffset": 0,
+      "dimArena": 0.5,
+      "spawnFx": {
+        "fxId": "fx_orb_fire",
+        "paletteName": "Dark Flame",
+        "size": 32,
+        "xFrac": 0.42,
+        "yFrac": 0.45,
+        "facing": "right",
+        "durationMs": 1000
+      }
+    },
+    {
+      "timeMs": 2300,
+      "actorPose": "ultimate_3",
+      "actorXOffset": 0,
+      "actorYOffset": 0,
+      "dimArena": 0.5,
+      "spawnFx": {
+        "fxId": "fx_orb_fire",
+        "paletteName": "Dark Flame",
+        "size": 32,
+        "xFrac": 0.33,
+        "yFrac": 0.5,
+        "facing": "right",
+        "durationMs": 1000
+      }
+    },
+    {
+      "timeMs": 2450,
+      "actorPose": "ultimate_3",
+      "actorXOffset": 0,
+      "actorYOffset": 0,
+      "dimArena": 0.5,
+      "spawnFx": {
+        "fxId": "fx_orb_fire",
+        "paletteName": "Dark Flame",
+        "size": 32,
+        "xFrac": 0.45,
+        "yFrac": 0.5,
+        "facing": "right",
+        "durationMs": 1000
+      }
+    },
+    {
+      "timeMs": 2600,
+      "actorPose": "ultimate_3",
+      "actorXOffset": 0,
+      "actorYOffset": 0,
+      "dimArena": 0.5,
+      "spawnFx": {
+        "fxId": "fx_orb_fire",
+        "paletteName": "Dark Flame",
+        "size": 32,
+        "xFrac": 0.33,
+        "yFrac": 0.59,
+        "facing": "right",
+        "durationMs": 1000
+      }
+    },
+    {
+      "timeMs": 2750,
+      "actorPose": "ultimate_3",
+      "actorXOffset": 0,
+      "actorYOffset": 0,
+      "dimArena": 0.5,
+      "spawnFx": {
+        "fxId": "fx_orb_fire",
+        "paletteName": "Dark Flame",
+        "size": 32,
+        "xFrac": 0.45,
+        "yFrac": 0.59,
+        "facing": "right",
+        "durationMs": 1000
+      }
+    },
+    {
+      "timeMs": 3000,
+      "actorPose": "attack_1",
+      "spawnFx": {
+        "fxId": "fx_fireball",
+        "paletteName": "Dark Flame",
+        "size": 32,
+        "xFrac": 0.37,
+        "yFrac": 0.45,
+        "targetXFrac": 0.76,
+        "targetYFrac": 0.62,
+        "speed": 0.42,
+        "facing": "right",
+        "durationMs": 750
+      },
+      "screenShake": {
+        "intensity": 6,
+        "durationMs": 400
+      },
+      "bossReaction": "idle",
+      "flashWhite": false
+    },
+    {
+      "timeMs": 3150,
+      "actorPose": "attack_2",
+      "spawnFx": {
+        "fxId": "fx_fireball",
+        "paletteName": "Dark Flame",
+        "size": 32,
+        "xFrac": 0.42,
+        "yFrac": 0.45,
+        "targetXFrac": 0.76,
+        "targetYFrac": 0.51,
+        "speed": 0.42,
+        "facing": "right",
+        "durationMs": 750
+      },
+      "screenShake": {
+        "intensity": 6,
+        "durationMs": 200
+      },
+      "bossReaction": "hit"
+    },
+    {
+      "timeMs": 3300,
+      "actorPose": "attack_1",
+      "spawnFx": {
+        "fxId": "fx_fireball",
+        "paletteName": "Dark Flame",
+        "size": 32,
+        "xFrac": 0.33,
+        "yFrac": 0.5,
+        "targetXFrac": 0.73,
+        "targetYFrac": 0.69,
+        "speed": 0.42,
+        "facing": "right",
+        "durationMs": 750
+      },
+      "screenShake": {
+        "intensity": 6,
+        "durationMs": 200
+      },
+      "bossReaction": "hit"
+    },
+    {
+      "timeMs": 3450,
+      "actorPose": "attack_2",
+      "actorXOffset": 0,
+      "actorYOffset": 0,
+      "dimArena": 0.5,
+      "spawnFx": {
+        "fxId": "fx_fireball",
+        "paletteName": "Dark Flame",
+        "size": 32,
+        "xFrac": 0.45,
+        "yFrac": 0.5,
+        "facing": "right",
+        "durationMs": 750,
+        "targetXFrac": 0.76,
+        "targetYFrac": 0.6,
+        "speed": 0.42
+      },
+      "screenShake": {
+        "intensity": 6,
+        "durationMs": 400
+      },
+      "bossReaction": "hit"
+    },
+    {
+      "timeMs": 3600,
+      "actorPose": "attack_1",
+      "actorXOffset": 0,
+      "actorYOffset": 0,
+      "dimArena": 0.5,
+      "spawnFx": {
+        "fxId": "fx_fireball",
+        "paletteName": "Dark Flame",
+        "size": 32,
+        "xFrac": 0.33,
+        "yFrac": 0.59,
+        "facing": "right",
+        "durationMs": 750,
+        "targetXFrac": 0.76,
+        "targetYFrac": 0.56,
+        "speed": 0.42
+      },
+      "bossReaction": "hit",
+      "screenShake": {
+        "intensity": 6,
+        "durationMs": 400
+      }
+    },
+    {
+      "timeMs": 3750,
+      "actorPose": "attack_2",
+      "actorXOffset": 0,
+      "actorYOffset": 0,
+      "dimArena": 0.5,
+      "spawnFx": {
+        "fxId": "fx_fireball",
+        "paletteName": "Dark Flame",
+        "size": 32,
+        "xFrac": 0.45,
+        "yFrac": 0.59,
+        "facing": "right",
+        "durationMs": 750,
+        "targetXFrac": 0.76,
+        "targetYFrac": 0.6,
+        "speed": 0.42
+      },
+      "bossReaction": "hit",
+      "screenShake": {
+        "intensity": 6,
+        "durationMs": 400
+      },
+      "flashWhite": false
+    },
+    {
+      "timeMs": 4000,
+      "actorPose": "idle_1",
+      "actorXOffset": 0,
+      "actorYOffset": 0,
+      "dimArena": 0
+    }
+  ]
+}

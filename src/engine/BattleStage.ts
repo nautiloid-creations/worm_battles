@@ -1,4 +1,15 @@
 import { SpriteActor, ActorState } from './SpriteActor';
+import { AudioEngine } from '../audio/AudioEngine';
+import { SpotlightArbitrator } from '../audio/SpotlightArbitrator';
+import { CombatFxManager, FxConfig, ActiveArenaFx } from './CombatFxManager';
+import { RasterWarpManager } from './RasterWarpManager';
+import { UltimateSequencer, UltimateKeyframe, UltimateFxDef } from './UltimateSequencer';
+import {
+  loadSettingsDefaults,
+  loadPartyDefaults,
+  loadEnemiesDefaults,
+  loadAudioDefaults,
+} from './StorageDefaults';
 
 export type HeroSlotKey = 'front' | 'top' | 'bottom' | 'back';
 
@@ -20,6 +31,17 @@ export const BASE_ENEMY_SLOT_POSITIONS: Array<{ xFraction: number; yFraction: nu
   { xFraction: 196 / 320, yFraction: 138 / 180 }, // 7: Front vanguard
 ];
 
+export interface ArenaDef {
+  id: string;
+  name: string;
+  path: string;
+}
+
+export const ARENAS: ArenaDef[] = [
+  { id: 'desert', name: '🏜️ Desert Dunes', path: '/assets/backgrounds/desert.png' },
+  { id: 'stage_1', name: '🌌 Synthwave Horizon', path: '/assets/backgrounds/stage_1.png' },
+];
+
 export interface ResolutionPreset {
   width: number;
   height: number;
@@ -31,8 +53,6 @@ export const RESOLUTION_PRESETS: Record<string, ResolutionPreset> = {
   '480x270': { width: 480, height: 270, label: '480 × 270 (Classic 270p)' },
   '640x360': { width: 640, height: 360, label: '640 × 360 (Mid-Fi 360p)' },
   '960x540': { width: 960, height: 540, label: '960 × 540 (Hi-Fi 540p)' },
-  '1280x720': { width: 1280, height: 720, label: '1280 × 720 (HD 720p)' },
-  '1920x1080': { width: 1920, height: 1080, label: '1920 × 1080 (FHD 1080p)' },
 };
 
 interface FloatingDamage {
@@ -59,6 +79,7 @@ export class BattleStage {
   private ctx: CanvasRenderingContext2D;
 
   public currentResKey = '320x180';
+  public currentArenaId = 'desert';
 
   public heroes: SpriteActor[] = [];
   public heroSlots: Map<string, HeroSlotKey> = new Map();
@@ -73,6 +94,30 @@ export class BattleStage {
   public baseLungeDistance = 24; // in 180p units
   public idleIntervalMs = 450;
   public attackIntervalMs = 115;
+  public attackFxHoldOffMs = 250; // Minimum interval between floating numbers & spark VFX (default 250ms)
+  private lastHeroAttackFxTimeMs = 0;
+  private lastEnemyAttackFxTimeMs = 0;
+
+  public audioEngine: AudioEngine;
+  public arbitrator: SpotlightArbitrator;
+
+  public fxManager: CombatFxManager = new CombatFxManager();
+  public heroAttackFxConfig: FxConfig = {
+    fxId: 'fx_fireball',
+    paletteName: 'Solar Flame',
+    size: 64,
+  };
+  public enemyAttackFxConfig: FxConfig = {
+    fxId: 'fx_orb_lightning',
+    paletteName: 'Electric Plasma',
+    size: 64,
+  };
+
+  public warpManager: RasterWarpManager = new RasterWarpManager();
+  public ultimateSequencer: UltimateSequencer = new UltimateSequencer();
+  public isUltimateStudioMode = false;
+  private sceneBufferCanvas: HTMLCanvasElement = document.createElement('canvas');
+  private sceneBufferCtx: CanvasRenderingContext2D = this.sceneBufferCanvas.getContext('2d')!;
 
   private floatingDamages: FloatingDamage[] = [];
   private sparks: SlashSpark[] = [];
@@ -83,6 +128,31 @@ export class BattleStage {
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
+
+    // Load saved settings defaults if available
+    const savedSettings = loadSettingsDefaults();
+    if (savedSettings) {
+      if (RESOLUTION_PRESETS[savedSettings.resKey]) {
+        this.currentResKey = savedSettings.resKey;
+      }
+      this.currentArenaId = savedSettings.arenaId || this.currentArenaId;
+      if (savedSettings.idleBpm) {
+        this.idleIntervalMs = Math.round(60000 / savedSettings.idleBpm);
+      }
+      if (savedSettings.attackBpm) {
+        this.attackIntervalMs = Math.round(60000 / savedSettings.attackBpm);
+      }
+      if (savedSettings.lungePx !== undefined) {
+        this.baseLungeDistance = savedSettings.lungePx;
+      }
+      if (savedSettings.autoHit !== undefined) {
+        this.autoHitOpponent = savedSettings.autoHit;
+      }
+      if (savedSettings.attackFxHoldOffMs !== undefined) {
+        this.attackFxHoldOffMs = savedSettings.attackFxHoldOffMs;
+      }
+    }
+
     const initialRes = RESOLUTION_PRESETS[this.currentResKey];
     this.canvas.width = initialRes.width;
     this.canvas.height = initialRes.height;
@@ -94,11 +164,98 @@ export class BattleStage {
     this.ctx = ctx;
     this.ctx.imageSmoothingEnabled = false;
 
+    // Initialize Web Audio Engine & Spotlight Arbitrator
+    this.audioEngine = new AudioEngine();
+    this.arbitrator = new SpotlightArbitrator(this, this.audioEngine);
+    this.audioEngine.onStopOrPause = () => {
+      this.resetActorsAndTimers();
+    };
+
+    // Ultimate Sequencer Callbacks
+    this.ultimateSequencer.onSpawnFx = (fx) => {
+      const scale = this.canvas.height / 180;
+      const targetX = fx.targetXFrac !== undefined ? Math.round(this.canvas.width * fx.targetXFrac) : undefined;
+      const targetY = fx.targetYFrac !== undefined ? Math.round(this.canvas.height * fx.targetYFrac) : undefined;
+      const speed = fx.speed !== undefined ? fx.speed * scale : undefined;
+
+      this.fxManager.spawnArenaEffect(
+        fx.fxId,
+        fx.paletteName,
+        fx.size,
+        Math.round(this.canvas.width * fx.xFrac),
+        Math.round(this.canvas.height * fx.yFrac),
+        fx.facing || 'right',
+        fx.durationMs,
+        targetX,
+        targetY,
+        speed
+      );
+    };
+    this.ultimateSequencer.onClearFx = () => {
+      this.fxManager.clear();
+    };
+    this.ultimateSequencer.onScreenShake = (intensity) => {
+      this.triggerScreenShake(intensity * 40);
+    };
+
+    // Apply saved audio defaults
+    const savedAudio = loadAudioDefaults();
+    if (savedAudio) {
+      this.arbitrator.allowInPlaceAttack = savedAudio.allowInPlaceAttack;
+      if (savedAudio.minFrontSec !== undefined) {
+        this.arbitrator.minInFrontTimeMs = Math.round(savedAudio.minFrontSec * 1000);
+      }
+      if (savedAudio.maxStarveSec !== undefined) {
+        this.arbitrator.maxNotInFrontTimeMs = Math.round(savedAudio.maxStarveSec * 1000);
+      }
+      if (savedAudio.silenceFloorPct !== undefined) {
+        this.arbitrator.silenceThresholdFraction = savedAudio.silenceFloorPct / 100;
+      }
+      if (savedAudio.dominantBalance !== undefined) {
+        this.arbitrator.dominantBalance = savedAudio.dominantBalance;
+      }
+      if (savedAudio.sustainWeightPct !== undefined) {
+        this.arbitrator.sustainWeight = savedAudio.sustainWeightPct / 100;
+      }
+      if (savedAudio.sustainTimeSec !== undefined) {
+        this.arbitrator.sustainTimeSec = savedAudio.sustainTimeSec;
+      }
+      if (savedAudio.loudnessDecayMs !== undefined) {
+        this.arbitrator.setLoudnessDecay(savedAudio.loudnessDecayMs);
+      }
+      if (savedAudio.activityDecayMs !== undefined) {
+        this.arbitrator.setActivityDecay(savedAudio.activityDecayMs);
+      }
+      if (savedAudio.minAttackBpm !== undefined) {
+        this.arbitrator.minAttackBpm = savedAudio.minAttackBpm;
+      } else if (savedAudio.minAttackSpeedMs !== undefined) {
+        this.arbitrator.minAttackSpeedMs = savedAudio.minAttackSpeedMs;
+      }
+      if (savedAudio.maxAttackBpm !== undefined) {
+        this.arbitrator.maxAttackBpm = savedAudio.maxAttackBpm;
+      } else if (savedAudio.maxAttackSpeedMs !== undefined) {
+        this.arbitrator.maxAttackSpeedMs = savedAudio.maxAttackSpeedMs;
+      }
+      for (const [chId, conf] of Object.entries(savedAudio.channels)) {
+        const ch = this.audioEngine.getChannel(chId);
+        if (ch) {
+          if (conf.lowCutHz) ch.setLowCut(conf.lowCutHz);
+          if (conf.highCutHz) ch.setHighCut(conf.highCutHz);
+          if (conf.threshold) ch.setThreshold(conf.threshold);
+          if (conf.detectGain !== undefined) ch.setDetectGain(conf.detectGain);
+          if (conf.volume !== undefined) ch.setVolume(conf.volume);
+          if (conf.riseSensitivity !== undefined) ch.setRiseSensitivity(conf.riseSensitivity);
+          if (conf.pulseWeight !== undefined) ch.setPulseWeight(conf.pulseWeight);
+          if (conf.kickThreshold !== undefined) ch.setKickThreshold(conf.kickThreshold);
+        }
+      }
+    }
+
     // Initialize the 4 band members
     this.initHeroes();
 
-    // Initialize first boss (The Worm)
-    this.initDefaultBoss();
+    // Initialize enemies
+    this.initEnemies();
   }
 
   public setCanvasResolution(resKey: string): void {
@@ -146,6 +303,11 @@ export class BattleStage {
       { id: 'hero_bass', name: 'BASS', folder: 'bass', slot: 'back' as HeroSlotKey, heightFraction: 0.43 },
     ];
 
+    const partyDefaults = loadPartyDefaults();
+    if (partyDefaults?.fxConfig) {
+      this.heroAttackFxConfig = { ...partyDefaults.fxConfig };
+    }
+
     this.heroes = [];
     this.heroSlots.clear();
 
@@ -155,6 +317,7 @@ export class BattleStage {
       const norm = BASE_HERO_SLOT_POSITIONS[def.slot];
       const posX = Math.round(norm.xFraction * this.canvas.width);
       const posY = Math.round(norm.yFraction * this.canvas.height);
+      const heightFraction = partyDefaults?.heroSizes?.[def.id] ?? def.heightFraction;
 
       const actor = new SpriteActor({
         id: def.id,
@@ -162,7 +325,7 @@ export class BattleStage {
         folderPath: `/assets/heroes/${def.folder}`,
         homeX: posX,
         homeY: posY,
-        heightFraction: def.heightFraction,
+        heightFraction,
         facing: 'right',
         lungeDistance: Math.round(this.baseLungeDistance * scale),
       });
@@ -170,19 +333,40 @@ export class BattleStage {
       actor.idleIntervalMs = this.idleIntervalMs;
       actor.attackIntervalMs = this.attackIntervalMs;
 
-      // When this hero attacks, trigger hit reaction on active enemy
+      // When this hero attacks, trigger hit reaction on active enemy if in front slot
       actor.onAttackFrameToggle = (frame) => {
         if (!this.autoHitOpponent) return;
+        const slot = this.heroSlots.get(actor.config.id);
+        if (slot && slot !== 'front') return; // In-place attackers rock out without striking boss
+
         const target = this.getActiveTargetEnemy();
         if (target && target.state !== 'downed') {
           target.isManuallyLatched = false;
           target.setState('hit');
-          this.spawnHitEffect(
-            target.currentX - 6 + (frame === 0 ? -6 : 6),
-            target.currentY - (this.canvas.height * target.heightFraction) * 0.55,
-            '#55ffff',
-            frame
+
+          // Spawn selected attack effect in the middle of the arena
+          const midX = Math.round(this.canvas.width * 0.5);
+          const midY = Math.round(this.canvas.height * 0.65);
+          this.fxManager.spawnArenaEffect(
+            this.heroAttackFxConfig.fxId,
+            this.heroAttackFxConfig.paletteName,
+            this.heroAttackFxConfig.size,
+            midX,
+            midY,
+            'right'
           );
+
+          // Throttle combat VFX and floating damage numbers by attackFxHoldOffMs
+          const now = performance.now();
+          if (now - this.lastHeroAttackFxTimeMs >= this.attackFxHoldOffMs) {
+            this.lastHeroAttackFxTimeMs = now;
+            this.spawnHitEffect(
+              target.currentX - 6 + (frame === 0 ? -6 : 6),
+              target.currentY - (this.canvas.height * target.heightFraction) * 0.55,
+              '#55ffff',
+              frame
+            );
+          }
         }
       };
 
@@ -191,29 +375,44 @@ export class BattleStage {
     }
   }
 
-  private initDefaultBoss(): void {
-    const norm = BASE_ENEMY_SLOT_POSITIONS[0];
-    const posX = Math.round(norm.xFraction * this.canvas.width);
-    const posY = Math.round(norm.yFraction * this.canvas.height);
+  private initEnemies(): void {
+    const saved = loadEnemiesDefaults();
+    if (saved?.fxConfig) {
+      this.enemyAttackFxConfig = { ...saved.fxConfig };
+    }
     const scale = this.canvas.height / 180;
+    this.enemies = [];
 
-    const boss = new SpriteActor({
-      id: 'enemy_1',
-      name: 'THE WORM #1',
-      folderPath: '/assets/bosses/the_worm',
-      homeX: posX,
-      homeY: posY,
-      heightFraction: 0.55,
-      facing: 'left',
-      lungeDistance: Math.round(this.baseLungeDistance * scale),
+    const enemyConfigs =
+      saved && saved.enemies && saved.enemies.length > 0
+        ? saved.enemies
+        : [{ type: 'the_worm' as const, heightFraction: 0.55 }];
+
+    this.nextEnemyCounter = 1;
+
+    enemyConfigs.forEach((conf, idx) => {
+      const norm = BASE_ENEMY_SLOT_POSITIONS[idx] || BASE_ENEMY_SLOT_POSITIONS[0];
+      const posX = Math.round(norm.xFraction * this.canvas.width);
+      const posY = Math.round(norm.yFraction * this.canvas.height);
+      const num = this.nextEnemyCounter++;
+      const name = conf.type === 'the_worm' ? `THE WORM #${num}` : `AIR SQUID #${num}`;
+
+      const enemy = new SpriteActor({
+        id: `enemy_${num}`,
+        name,
+        folderPath: `/assets/bosses/${conf.type}`,
+        homeX: posX,
+        homeY: posY,
+        heightFraction: conf.heightFraction,
+        facing: 'left',
+        lungeDistance: Math.round(this.baseLungeDistance * scale),
+      });
+
+      enemy.idleIntervalMs = this.idleIntervalMs;
+      enemy.attackIntervalMs = this.attackIntervalMs;
+      this.hookEnemyAttack(enemy);
+      this.enemies.push(enemy);
     });
-
-    boss.idleIntervalMs = this.idleIntervalMs;
-    boss.attackIntervalMs = this.attackIntervalMs;
-
-    this.hookEnemyAttack(boss);
-    this.enemies = [boss];
-    this.nextEnemyCounter = 2;
   }
 
   private hookEnemyAttack(enemy: SpriteActor): void {
@@ -223,12 +422,29 @@ export class BattleStage {
       if (targetHero && targetHero.state !== 'downed') {
         targetHero.isManuallyLatched = false;
         targetHero.setState('hit');
-        this.spawnHitEffect(
-          targetHero.currentX + 6 + (frame === 0 ? -4 : 4),
-          targetHero.currentY - (this.canvas.height * targetHero.heightFraction) * 0.55,
-          '#ff5577',
-          frame
+
+        // Spawn selected attack effect in the middle of the arena
+        const midX = Math.round(this.canvas.width * 0.5);
+        const midY = Math.round(this.canvas.height * 0.65);
+        this.fxManager.spawnArenaEffect(
+          this.enemyAttackFxConfig.fxId,
+          this.enemyAttackFxConfig.paletteName,
+          this.enemyAttackFxConfig.size,
+          midX,
+          midY,
+          'left'
         );
+
+        const now = performance.now();
+        if (now - this.lastEnemyAttackFxTimeMs >= this.attackFxHoldOffMs) {
+          this.lastEnemyAttackFxTimeMs = now;
+          this.spawnHitEffect(
+            targetHero.currentX + 6 + (frame === 0 ? -4 : 4),
+            targetHero.currentY - (this.canvas.height * targetHero.heightFraction) * 0.55,
+            '#ff5577',
+            frame
+          );
+        }
       }
     };
   }
@@ -246,6 +462,44 @@ export class BattleStage {
     return this.enemies.find((e) => e.state !== 'downed') || this.enemies[0];
   }
 
+  public bringHeroToFront(heroId: string): void {
+    const currentSlot = this.heroSlots.get(heroId);
+    if (!currentSlot || currentSlot === 'front') return;
+
+    let frontHeroId = '';
+    for (const [id, slot] of this.heroSlots.entries()) {
+      if (slot === 'front') {
+        frontHeroId = id;
+        break;
+      }
+    }
+
+    if (frontHeroId) {
+      this.heroSlots.set(frontHeroId, currentSlot);
+      this.heroSlots.set(heroId, 'front');
+
+      const displacedHero = this.heroes.find((h) => h.config.id === frontHeroId);
+      if (displacedHero) {
+        const normNew = BASE_HERO_SLOT_POSITIONS[currentSlot];
+        const newX = Math.round(normNew.xFraction * this.canvas.width);
+        const newY = Math.round(normNew.yFraction * this.canvas.height);
+        displacedHero.setHome(newX, newY);
+        displacedHero.currentX = newX;
+        displacedHero.currentY = newY;
+      }
+
+      const hero = this.heroes.find((h) => h.config.id === heroId);
+      if (hero) {
+        const normFront = BASE_HERO_SLOT_POSITIONS['front'];
+        const frontX = Math.round(normFront.xFraction * this.canvas.width);
+        const frontY = Math.round(normFront.yFraction * this.canvas.height);
+        hero.setHome(frontX, frontY);
+        hero.currentX = frontX;
+        hero.currentY = frontY;
+      }
+    }
+  }
+
   /**
    * Volleyball swap: at the onset of an attack/ultimate,
    * if the character is not in 'front', direct swap with the current 'front' character.
@@ -255,36 +509,7 @@ export class BattleStage {
     if (!hero) return;
 
     if (state === 'attack' || state === 'ultimate') {
-      const currentSlot = this.heroSlots.get(heroId);
-      if (currentSlot && currentSlot !== 'front') {
-        let frontHeroId = '';
-        for (const [id, slot] of this.heroSlots.entries()) {
-          if (slot === 'front') {
-            frontHeroId = id;
-            break;
-          }
-        }
-
-        if (frontHeroId) {
-          this.heroSlots.set(frontHeroId, currentSlot);
-          this.heroSlots.set(heroId, 'front');
-
-          const displacedHero = this.heroes.find((h) => h.config.id === frontHeroId);
-          if (displacedHero) {
-            const normNew = BASE_HERO_SLOT_POSITIONS[currentSlot];
-            displacedHero.setHome(
-              Math.round(normNew.xFraction * this.canvas.width),
-              Math.round(normNew.yFraction * this.canvas.height)
-            );
-          }
-
-          const normFront = BASE_HERO_SLOT_POSITIONS['front'];
-          hero.setHome(
-            Math.round(normFront.xFraction * this.canvas.width),
-            Math.round(normFront.yFraction * this.canvas.height)
-          );
-        }
-      }
+      this.bringHeroToFront(heroId);
     }
 
     hero.setState(state);
@@ -350,25 +575,45 @@ export class BattleStage {
     });
   }
 
-  public async loadAllAssets(cacheBust = false): Promise<void> {
+  public async setArena(arenaId: string, cacheBust = false): Promise<void> {
+    const arena = ARENAS.find((a) => a.id === arenaId) || ARENAS[0];
+    this.currentArenaId = arena.id;
     const query = cacheBust ? `?t=${Date.now()}` : '';
-    const bgPromise = new Promise<void>((resolve) => {
+
+    return new Promise<void>((resolve) => {
       const img = new Image();
       img.onload = () => {
         this.bgImage = img;
         resolve();
       };
       img.onerror = () => {
-        console.warn('Missing background /assets/backgrounds/stage_1.png');
-        resolve();
+        if (arena.id !== 'stage_1') {
+          const fallback = new Image();
+          fallback.onload = () => {
+            this.bgImage = fallback;
+            resolve();
+          };
+          fallback.onerror = () => resolve();
+          fallback.src = `/assets/backgrounds/stage_1.png${query}`;
+        } else {
+          resolve();
+        }
       };
-      img.src = `/assets/backgrounds/stage_1.png${query}`;
+      img.src = `${arena.path}${query}`;
     });
+  }
 
+  public async loadAllAssets(cacheBust = false): Promise<void> {
     const heroPromises = this.heroes.map((h) => h.loadSprites(cacheBust));
     const enemyPromises = this.enemies.map((e) => e.loadSprites(cacheBust));
 
-    await Promise.all([bgPromise, ...heroPromises, ...enemyPromises]);
+    await Promise.all([
+      this.setArena(this.currentArenaId, cacheBust),
+      this.audioEngine.preloadDefaultStems(),
+      this.fxManager.loadAssets(),
+      ...heroPromises,
+      ...enemyPromises,
+    ]);
   }
 
   public setBaseLungeDistance(px: number): void {
@@ -389,10 +634,38 @@ export class BattleStage {
     for (const e of this.enemies) e.idleIntervalMs = ms;
   }
 
+  public setIdleTempo(bpm: number): void {
+    this.setIdleInterval(Math.round(60000 / bpm));
+  }
+
   public setAttackInterval(ms: number): void {
     this.attackIntervalMs = ms;
     for (const h of this.heroes) h.attackIntervalMs = ms;
     for (const e of this.enemies) e.attackIntervalMs = ms;
+  }
+
+  public setAttackTempo(bpm: number): void {
+    this.setAttackInterval(Math.round(60000 / bpm));
+  }
+
+  public resetActorsAndTimers(): void {
+    // 1. Reset all heroes to idle and home position
+    for (const hero of this.heroes) {
+      hero.resetCombatState();
+    }
+
+    // 2. Reset all enemies to idle and home position
+    for (const enemy of this.enemies) {
+      enemy.resetCombatState();
+    }
+
+    // 3. Clear combat VFX
+    this.sparks = [];
+    this.floatingDamages = [];
+    this.screenShakeMs = 0;
+
+    // 4. Reset arbitration starvation and front timers
+    this.arbitrator.resetTimers();
   }
 
   private spawnHitEffect(
@@ -420,12 +693,18 @@ export class BattleStage {
       maxLifeMs: 120,
       variant,
     });
+  }
 
-    this.screenShakeMs = 90;
+  public triggerScreenShake(durationMs = 80): void {
+    this.screenShakeMs = durationMs;
   }
 
   public onTick(cb: () => void): void {
     this.onFrameListeners.push(cb);
+  }
+
+  public removeTick(cb: () => void): void {
+    this.onFrameListeners = this.onFrameListeners.filter((l) => l !== cb);
   }
 
   public startLoop(): void {
@@ -442,8 +721,53 @@ export class BattleStage {
   }
 
   private update(dtMs: number): void {
+    // 1. Audio Engine & Spotlight Arbitrator update
+    this.audioEngine.update(
+      dtMs,
+      this.arbitrator.dominantBalance,
+      this.arbitrator.sustainWeight,
+      this.arbitrator.sustainTimeSec
+    );
+    this.arbitrator.update(dtMs);
+
+    // Screen shake is strictly driven by 50Hz bass drum hits
+    const drumCh = this.audioEngine.getChannel('drums');
+    if (drumCh && drumCh.isKickHit) {
+      this.triggerScreenShake(75);
+    }
+
     for (const h of this.heroes) h.update(dtMs);
     for (const e of this.enemies) e.update(dtMs);
+
+    // Only update FX timers if NOT in ultimate studio, OR if playback is actively playing!
+    if (!this.isUltimateStudioMode || this.ultimateSequencer.isPlaying) {
+      this.fxManager.update(dtMs);
+    }
+
+    if (this.isUltimateStudioMode) {
+      this.ultimateSequencer.update(dtMs);
+      const actorId = this.ultimateSequencer.sequence.actorId;
+      const scale = this.canvas.height / 180;
+      const actor =
+        this.heroes.find((h) => h.config.id === actorId) ||
+        this.enemies.find((e) => e.config.id === actorId || e.config.id.startsWith('enemy_'));
+      if (actor) {
+        actor.forcedSpriteKey = this.ultimateSequencer.currentActorPose;
+        const dir = actor.config.facing === 'right' ? 1 : -1;
+        actor.currentX = actor.config.homeX + dir * this.ultimateSequencer.currentActorXOffset * scale;
+        actor.currentY = actor.config.homeY + this.ultimateSequencer.currentActorYOffset * scale;
+
+        if (this.ultimateSequencer.currentActorShake > 0) {
+          const shake = this.ultimateSequencer.currentActorShake;
+          actor.currentX += (Math.random() - 0.5) * 2 * shake * scale;
+          actor.currentY += (Math.random() - 0.5) * 2 * shake * scale;
+        }
+      }
+      const boss = this.getActiveTargetEnemy();
+      if (boss && this.ultimateSequencer.currentBossReaction !== 'idle') {
+        boss.setState(this.ultimateSequencer.currentBossReaction);
+      }
+    }
 
     if (this.screenShakeMs > 0) {
       this.screenShakeMs = Math.max(0, this.screenShakeMs - dtMs);
@@ -467,11 +791,110 @@ export class BattleStage {
     }
   }
 
-  private render(): void {
-    const ctx = this.ctx;
+  public syncStudioFx(selectedKf?: UltimateKeyframe, forceSelected = false): void {
+    if (!this.isUltimateStudioMode || this.ultimateSequencer.isPlaying) return;
+
     const W = this.canvas.width;
     const H = this.canvas.height;
     const scale = H / 180;
+    const t = this.ultimateSequencer.currentTimeMs;
+
+    const effects: ActiveArenaFx[] = [];
+
+    const evaluateFx = (fx: UltimateFxDef, kfTimeMs: number): ActiveArenaFx => {
+      const startMs = kfTimeMs;
+      const durMs = fx.durationMs || 1500;
+      const elapsed = Math.max(0, Math.min(durMs, t - startMs));
+
+      const startX = Math.round(W * fx.xFrac);
+      const startY = Math.round(H * fx.yFrac);
+      let currentX = startX;
+      let currentY = startY;
+
+      if (fx.targetXFrac !== undefined && fx.targetYFrac !== undefined) {
+        const targetX = Math.round(W * fx.targetXFrac);
+        const targetY = Math.round(H * fx.targetYFrac);
+        const dx = targetX - startX;
+        const dy = targetY - startY;
+        const dist = Math.hypot(dx, dy);
+        const speed = (fx.speed !== undefined ? fx.speed : 0.4) * scale;
+        const travelDist = speed * elapsed;
+
+        if (dist > 0 && travelDist < dist) {
+          const frac = travelDist / dist;
+          currentX = Math.round(startX + dx * frac);
+          currentY = Math.round(startY + dy * frac);
+        } else if (dist > 0 && travelDist >= dist) {
+          currentX = targetX;
+          currentY = targetY;
+        }
+      }
+
+      return {
+        fxId: fx.fxId,
+        paletteName: fx.paletteName,
+        size: fx.size,
+        x: currentX,
+        y: currentY,
+        targetX: fx.targetXFrac !== undefined ? Math.round(W * fx.targetXFrac) : undefined,
+        targetY: fx.targetYFrac !== undefined ? Math.round(H * fx.targetYFrac) : undefined,
+        speed: fx.speed !== undefined ? fx.speed * scale : undefined,
+        facing: fx.facing || 'right',
+        lifeMs: durMs,
+        maxLifeMs: durMs,
+      };
+    };
+
+    let forcedAdded = false;
+    for (const kf of this.ultimateSequencer.sequence.keyframes) {
+      if (!kf.spawnFx) continue;
+      const fxDefs = Array.isArray(kf.spawnFx) ? kf.spawnFx : [kf.spawnFx];
+
+      for (const fx of fxDefs) {
+        const startMs = kf.timeMs;
+        const durMs = fx.durationMs || 1500;
+        const endMs = startMs + durMs;
+
+        const isTimeActive = t >= startMs && t <= endMs;
+        const isSelected = selectedKf === kf;
+
+        if (isTimeActive || (forceSelected && isSelected)) {
+          effects.push(evaluateFx(fx, kf.timeMs));
+          if (isSelected) forcedAdded = true;
+        }
+      }
+    }
+
+    if (forceSelected && selectedKf?.spawnFx && !forcedAdded) {
+      const fxDefs = Array.isArray(selectedKf.spawnFx) ? selectedKf.spawnFx : [selectedKf.spawnFx];
+      for (const fx of fxDefs) {
+        effects.push(evaluateFx(fx, selectedKf.timeMs));
+      }
+    }
+
+    this.fxManager.activeEffects = effects;
+  }
+
+  private render(): void {
+    const W = this.canvas.width;
+    const H = this.canvas.height;
+    const scale = H / 180;
+
+    const isWarpingAll =
+      this.isUltimateStudioMode &&
+      this.ultimateSequencer.currentWarpConfig.type !== 'none' &&
+      this.ultimateSequencer.currentWarpConfig.target === 'all';
+
+    let ctx = this.ctx;
+    if (isWarpingAll) {
+      if (this.sceneBufferCanvas.width !== W || this.sceneBufferCanvas.height !== H) {
+        this.sceneBufferCanvas.width = W;
+        this.sceneBufferCanvas.height = H;
+      }
+      ctx = this.sceneBufferCtx;
+      ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0, 0, W, H);
+    }
 
     ctx.save();
     ctx.imageSmoothingEnabled = false;
@@ -482,15 +905,38 @@ export class BattleStage {
       ctx.translate(sx, sy);
     }
 
-    // 1. Background
+    // 1. Background (with optional raster warp)
     if (this.bgImage && this.bgImage.naturalWidth > 0) {
-      ctx.drawImage(this.bgImage, 0, 0, W, H);
+      if (
+        this.isUltimateStudioMode &&
+        this.ultimateSequencer.currentWarpConfig.type !== 'none' &&
+        this.ultimateSequencer.currentWarpConfig.target === 'background'
+      ) {
+        this.warpManager.applyWarp(
+          ctx,
+          this.bgImage,
+          W,
+          H,
+          this.ultimateSequencer.currentTimeMs,
+          this.ultimateSequencer.currentWarpConfig
+        );
+      } else {
+        ctx.drawImage(this.bgImage, 0, 0, W, H);
+      }
     } else {
       ctx.fillStyle = '#181028';
       ctx.fillRect(0, 0, W, H);
     }
 
-    // 2. Y-sorted Actor Rendering
+    // 2. Dimming overlay for ultimate dramatic spotlight
+    if (this.isUltimateStudioMode && this.ultimateSequencer.currentDimArena > 0) {
+      ctx.save();
+      ctx.fillStyle = `rgba(0, 0, 0, ${Math.min(0.9, this.ultimateSequencer.currentDimArena)})`;
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    }
+
+    // 3. Y-sorted Actor Rendering
     const allActors: SpriteActor[] = [...this.heroes, ...this.enemies];
     allActors.sort((a, b) => {
       const aBonus = a.state === 'attack' || a.state === 'ultimate' ? 12 * scale : 0;
@@ -502,7 +948,40 @@ export class BattleStage {
       actor.draw(ctx, H);
     }
 
-    // 3. Pixel Slash / Sparks
+    // 4. Combat FX
+    this.fxManager.draw(ctx);
+
+    // Trajectory flight preview in Ultimate Studio mode
+    if (this.isUltimateStudioMode && !this.ultimateSequencer.isPlaying) {
+      for (const fx of this.fxManager.activeEffects) {
+        if (fx.targetX !== undefined && fx.targetY !== undefined) {
+          ctx.save();
+          ctx.setLineDash([4, 4]);
+          ctx.strokeStyle = 'rgba(255, 230, 0, 0.7)';
+          ctx.lineWidth = Math.max(1, Math.round(1.5 * scale));
+          ctx.beginPath();
+          ctx.moveTo(fx.x, fx.y);
+          ctx.lineTo(fx.targetX, fx.targetY);
+          ctx.stroke();
+
+          // Target reticle
+          const r = Math.round(6 * scale);
+          ctx.setLineDash([]);
+          ctx.strokeStyle = 'rgba(255, 60, 60, 0.85)';
+          ctx.lineWidth = Math.max(1, Math.round(1.5 * scale));
+          ctx.beginPath();
+          ctx.arc(fx.targetX, fx.targetY, r, 0, Math.PI * 2);
+          ctx.moveTo(fx.targetX - r - 2, fx.targetY);
+          ctx.lineTo(fx.targetX + r + 2, fx.targetY);
+          ctx.moveTo(fx.targetX, fx.targetY - r - 2);
+          ctx.lineTo(fx.targetX, fx.targetY + r + 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+    }
+
+    // 5. Pixel Slash / Sparks
     const sparkSize = Math.max(6, Math.round(10 * scale));
     for (const sp of this.sparks) {
       ctx.save();
@@ -520,7 +999,7 @@ export class BattleStage {
       ctx.restore();
     }
 
-    // 4. Floating Retro Damage Numbers
+    // 6. Floating Retro Damage Numbers
     const fontSize = Math.max(7, Math.round(8 * scale));
     ctx.font = `bold ${fontSize}px "Press Start 2P", monospace`;
     ctx.textAlign = 'center';
@@ -533,6 +1012,27 @@ export class BattleStage {
       ctx.fillText(fd.text, x, y);
     }
 
+    // 7. White flash on impact
+    if (this.isUltimateStudioMode && this.ultimateSequencer.currentWhiteFlash) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    }
+
     ctx.restore();
+
+    // If warping whole scene, apply warp from buffer canvas to main canvas
+    if (isWarpingAll) {
+      this.ctx.clearRect(0, 0, W, H);
+      this.warpManager.applyWarp(
+        this.ctx,
+        this.sceneBufferCanvas,
+        W,
+        H,
+        this.ultimateSequencer.currentTimeMs,
+        this.ultimateSequencer.currentWarpConfig
+      );
+    }
   }
 }

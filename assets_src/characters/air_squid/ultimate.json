@@ -1,0 +1,49 @@
+{
+  "actorId": "enemy_air_squid",
+  "name": "Ink Vortex Meltdown",
+  "durationMs": 4000,
+  "keyframes": [
+    {
+      "timeMs": 0,
+      "actorPose": "idle_1",
+      "dimArena": 0.2
+    },
+    {
+      "timeMs": 500,
+      "actorPose": "ultimate",
+      "dimArena": 0.75,
+      "warp": {
+        "type": "void_vortex",
+        "target": "background",
+        "amplitude": 20,
+        "frequency": 0.055,
+        "speed": 0.012,
+        "durationMs": 2800
+      },
+      "spawnFx": {
+        "fxId": "fx_orb_lightning",
+        "paletteName": "Toxic Acid",
+        "size": 112,
+        "xFrac": 0.45,
+        "yFrac": 0.55,
+        "facing": "left",
+        "durationMs": 2200
+      }
+    },
+    {
+      "timeMs": 2400,
+      "actorPose": "attack_1",
+      "flashWhite": true,
+      "bossReaction": "idle",
+      "screenShake": {
+        "intensity": 12,
+        "durationMs": 600
+      }
+    },
+    {
+      "timeMs": 3600,
+      "actorPose": "idle_1",
+      "dimArena": 0
+    }
+  ]
+}

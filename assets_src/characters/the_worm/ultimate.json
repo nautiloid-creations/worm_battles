@@ -1,0 +1,49 @@
+{
+  "actorId": "the_worm",
+  "name": "Abyssal Bloodfire Mirage",
+  "durationMs": 4200,
+  "keyframes": [
+    {
+      "timeMs": 0,
+      "actorPose": "idle_1",
+      "dimArena": 0.2
+    },
+    {
+      "timeMs": 500,
+      "actorPose": "ultimate",
+      "dimArena": 0.75,
+      "warp": {
+        "type": "heat_shimmer",
+        "target": "background",
+        "amplitude": 24,
+        "frequency": 0.065,
+        "speed": 0.015,
+        "durationMs": 3000
+      },
+      "spawnFx": {
+        "fxId": "fx_orb_fire",
+        "paletteName": "Dark Flame",
+        "size": 112,
+        "xFrac": 0.45,
+        "yFrac": 0.65,
+        "facing": "left",
+        "durationMs": 2400
+      }
+    },
+    {
+      "timeMs": 2400,
+      "actorPose": "attack_1",
+      "flashWhite": true,
+      "bossReaction": "idle",
+      "screenShake": {
+        "intensity": 12,
+        "durationMs": 600
+      }
+    },
+    {
+      "timeMs": 3800,
+      "actorPose": "idle_1",
+      "dimArena": 0
+    }
+  ]
+}

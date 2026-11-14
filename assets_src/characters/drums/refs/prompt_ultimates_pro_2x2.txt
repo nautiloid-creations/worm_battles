@@ -1,0 +1,47 @@
+16-bit retro arcade video game pixel art sprite sheet on a square 1:1 canvas (1024x1024) on a solid flat bright magenta (#FF00FF) background.
+
+GRID ARRANGEMENT & SPACING (2x2 Grid):
+- Top-Left Quadrant: ULTIMATE_1 (2 arms overhead)
+- Top-Right Quadrant: ULTIMATE_2 (4 arms)
+- Bottom-Left Quadrant: ULTIMATE_3 (6 arms)
+- Bottom-Right Quadrant: Empty solid flat magenta (#FF00FF)
+- MANDATORY SPACING: There must be wide, continuous bands of empty solid magenta (#FF00FF) separating the top row from the bottom row, and the left column from the right column. Tripod feet, cymbals, and hands must NEVER touch or cross the center lines. Each figure must be a completely isolated standalone sprite.
+
+CRITICAL HARDWARE FIDELITY (Strictly matching Reference 1 idle_1.png):
+- COMPACT DRUM KIT WITH EXACTLY ONE (1) RACK TOM:
+  * Bass drum: Solid black circular bass drum head (strictly NO sound holes or cutout ports).
+  * Mounted rack tom: Exactly ONE (1) small chrome tom mounted on the right side of the bass drum. Strictly DO NOT draw two rack toms; there is only ONE rack tom so the drummer's chest remains visible.
+  * Floor tom: Exactly ONE (1) larger chrome floor tom on the left side.
+  * Shell finish: Shiny, reflective chrome / metallic silver with cool blue-gray highlights (identical to Reference 1). NOT white, NOT matte gray.
+  * Cymbal stands: Single crash cymbal on tripod on left; single dual-boom tripod stand holding two cymbals on right.
+
+CRITICAL CHARACTER LIKENESS & ATTIRE (Strictly matching Reference 1 idle_1.png, Reference 2 attack_1.png, and Reference 6 character_01.jpg):
+- Character: Athletic 35-year-old white male, short brown hair, trimmed beard/stubble.
+- Facial Expression across ALL 3 figures: Identical intense battle expression with teeth bared/gritted and focused aggressive eyes (strictly matching Reference 2 attack_1.png).
+- Shirt: Solid black crewneck short-sleeve t-shirt fitting an athletic build.
+- SMARTWATCH POSITION (MANDATORY): Black smartwatch must be worn strictly on the drummer's RIGHT wrist (which appears on the VIEWER'S LEFT side of the image). The left wrist has bare skin.
+- Hands: Natural Caucasian bare skin tone hands, fingers, and palms. All hands are OPEN with fingers spread wide (summoning/casting). Absolutely NO gloves, NO wristbands, NO drumsticks in any pose.
+
+THE THREE POSES:
+
+1. TOP-LEFT CELL — ULTIMATE_1 (Two Arms):
+- Drummer seated behind chrome kit facing camera, aggressive battle expression (teeth bared).
+- TWO (2) arms raised high overhead, elbows bent, hands held high above head with open palms and fingers spread wide. Black smartwatch on right wrist (viewer's left). No drumsticks.
+
+2. TOP-RIGHT CELL — ULTIMATE_2 (Four Arms):
+- Exactly identical drummer, face, aggressive expression, black t-shirt, smartwatch, and chrome kit.
+- FOUR (4) muscular arms sprouting from torso/shoulders:
+  * Top pair: raised high overhead, open palms facing forward with fingers spread wide.
+  * Second pair: reaching outward diagonally to each side, elbows slightly bent, open palms facing forward.
+  No drumsticks.
+
+3. BOTTOM-LEFT CELL — ULTIMATE_3 (Six Arms):
+- Exactly identical drummer, face, aggressive expression, black t-shirt, smartwatch, and chrome kit.
+- SIX (6) muscular arms radiating from torso/shoulders (Asura deity style):
+  * Top pair: raised high overhead, open palms with fingers spread wide.
+  * Middle pair: reaching outward diagonally to each side, open palms with fingers spread wide.
+  * Lower pair: extending outward horizontally/lower diagonal above the drums, open palms with fingers spread wide.
+  No drumsticks.
+
+CLEAN ARTWORK:
+Zero hit sparks, zero visual effects, zero motion lines, zero floor shadows, zero background gradients. Pure crisp pixel art sprites isolated on solid bright magenta (#FF00FF).

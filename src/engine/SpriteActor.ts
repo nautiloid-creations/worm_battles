@@ -7,7 +7,10 @@ export type SpriteKey =
   | 'attack_2'
   | 'hit'
   | 'downed'
-  | 'ultimate';
+  | 'ultimate'
+  | 'ultimate_1'
+  | 'ultimate_2'
+  | 'ultimate_3';
 
 export const ALL_SPRITE_KEYS: SpriteKey[] = [
   'idle_1',
@@ -17,6 +20,9 @@ export const ALL_SPRITE_KEYS: SpriteKey[] = [
   'hit',
   'downed',
   'ultimate',
+  'ultimate_1',
+  'ultimate_2',
+  'ultimate_3',
 ];
 
 export interface SpriteActorConfig {
@@ -50,10 +56,13 @@ export class SpriteActor {
   private hitShakeTimerMs = 0;
   private hitAutoRecoveryTimerMs = 0;
   public isManuallyLatched = false;
+  public canLunge = true;
+  public forcedSpriteKey: SpriteKey | null = null;
 
   // Loaded HTMLImageElement map + white silhouette canvas cache
   private sprites: Partial<Record<SpriteKey, HTMLImageElement>> = {};
   private whiteSilhouettes: Partial<Record<SpriteKey, HTMLCanvasElement>> = {};
+  private scaledCache: Map<string, HTMLCanvasElement> = new Map();
   public isLoaded = false;
 
   // Optional callback fired each time an attack frame toggles (for triggering opponent hit/sparks)
@@ -80,6 +89,7 @@ export class SpriteActor {
     const keysToTry = this.config.availablePoses || ALL_SPRITE_KEYS;
     this.sprites = {};
     this.whiteSilhouettes = {};
+    this.scaledCache.clear();
 
     const promises = keysToTry.map(
       (key) =>
@@ -149,7 +159,23 @@ export class SpriteActor {
     }
   }
 
+  public resetCombatState(): void {
+    this.state = 'idle';
+    this.forcedSpriteKey = null;
+    this.isManuallyLatched = false;
+    this.hitFlashTimerMs = 0;
+    this.hitShakeTimerMs = 0;
+    this.hitAutoRecoveryTimerMs = 0;
+    this.currentX = this.config.homeX;
+    this.currentY = this.config.homeY;
+    this.frameIndex = 0;
+    this.frameTimerMs = 0;
+  }
+
   public getActiveSpriteKey(): SpriteKey {
+    if (this.forcedSpriteKey && this.sprites[this.forcedSpriteKey]) {
+      return this.forcedSpriteKey;
+    }
     switch (this.state) {
       case 'idle':
         if (this.frameIndex === 1 && this.sprites.idle_2) return 'idle_2';
@@ -192,7 +218,7 @@ export class SpriteActor {
     }
 
     // 2. Smooth position lerping for slot swaps and attack/ultimate lunges
-    const isLunging = this.state === 'attack' || this.state === 'ultimate';
+    const isLunging = (this.state === 'attack' || this.state === 'ultimate') && this.canLunge;
     const dir = this.config.facing === 'right' ? 1 : -1;
     const targetX = this.config.homeX + (isLunging ? dir * this.config.lungeDistance : 0);
     const targetY = this.config.homeY;
@@ -216,6 +242,156 @@ export class SpriteActor {
     }
   }
 
+  private getOrCreateScaledCanvas(
+    key: SpriteKey,
+    img: HTMLImageElement,
+    targetW: number,
+    targetH: number
+  ): HTMLCanvasElement {
+    const cacheKey = `${key}_${targetW}x${targetH}`;
+    let cached = this.scaledCache.get(cacheKey);
+    if (cached) return cached;
+
+    cached = document.createElement('canvas');
+    cached.width = targetW;
+    cached.height = targetH;
+    const cCtx = cached.getContext('2d')!;
+    cCtx.imageSmoothingEnabled = true;
+    cCtx.imageSmoothingQuality = 'high';
+    cCtx.drawImage(img, 0, 0, targetW, targetH);
+
+    // Apply +40% Unsharp Kernel followed by Edge Snapping (Arcade Re-inking)
+    const imgData = cCtx.getImageData(0, 0, targetW, targetH);
+    const src = imgData.data;
+    const len = src.length;
+
+    // Step 1: Unsharp sharpening (+40% strength: center c = 1.40, 4 neighbors w = 0.10)
+    const sharp = new Uint8ClampedArray(len);
+    const c = 1.40;
+    const w = 0.10;
+
+    for (let y = 0; y < targetH; y++) {
+      for (let x = 0; x < targetW; x++) {
+        const idx = (y * targetW + x) * 4;
+        const a = src[idx + 3];
+        if (a < 30) {
+          sharp[idx + 3] = 0;
+          continue;
+        }
+
+        let r = src[idx] * c;
+        let g = src[idx + 1] * c;
+        let b = src[idx + 2] * c;
+
+        if (x > 0 && src[idx - 4 + 3] > 30) {
+          r -= src[idx - 4] * w;
+          g -= src[idx - 3] * w;
+          b -= src[idx - 2] * w;
+        }
+        if (x < targetW - 1 && src[idx + 4 + 3] > 30) {
+          r -= src[idx + 4] * w;
+          g -= src[idx + 5] * w;
+          b -= src[idx + 6] * w;
+        }
+        if (y > 0 && src[idx - targetW * 4 + 3] > 30) {
+          r -= src[idx - targetW * 4] * w;
+          g -= src[idx - targetW * 4 + 1] * w;
+          b -= src[idx - targetW * 4 + 2] * w;
+        }
+        if (y < targetH - 1 && src[idx + targetW * 4 + 3] > 30) {
+          r -= src[idx + targetW * 4] * w;
+          g -= src[idx + targetW * 4 + 1] * w;
+          b -= src[idx + targetW * 4 + 2] * w;
+        }
+
+        sharp[idx] = r;
+        sharp[idx + 1] = g;
+        sharp[idx + 2] = b;
+        sharp[idx + 3] = a;
+      }
+    }
+
+    // Step 2: Edge Snapping & Outline Re-inking
+    for (let y = 0; y < targetH; y++) {
+      for (let x = 0; x < targetW; x++) {
+        const idx = (y * targetW + x) * 4;
+        const a = sharp[idx + 3];
+        if (a < 40) {
+          src[idx + 3] = 0;
+          continue;
+        }
+
+        let isEdge = false;
+        if (
+          x === 0 ||
+          x === targetW - 1 ||
+          y === 0 ||
+          y === targetH - 1 ||
+          sharp[idx - 4 + 3] < 40 ||
+          sharp[idx + 4 + 3] < 40 ||
+          sharp[idx - targetW * 4 + 3] < 40 ||
+          sharp[idx + targetW * 4 + 3] < 40
+        ) {
+          isEdge = true;
+        }
+
+        let r = sharp[idx];
+        let g = sharp[idx + 1];
+        let b = sharp[idx + 2];
+        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+        if (isEdge) {
+          // Perimeter pixel: if dark/outline, clamp to solid black outline; otherwise darken by 35%
+          if (lum < 95) {
+            r = Math.round(r * 0.2);
+            g = Math.round(g * 0.2);
+            b = Math.round(b * 0.2);
+          } else {
+            r = Math.round(r * 0.65);
+            g = Math.round(g * 0.65);
+            b = Math.round(b * 0.65);
+          }
+          src[idx + 3] = 255; // solid alpha, eliminating blurry halo
+        } else {
+          src[idx + 3] = 255;
+        }
+
+        src[idx] = r;
+        src[idx + 1] = g;
+        src[idx + 2] = b;
+      }
+    }
+
+    cCtx.putImageData(imgData, 0, 0);
+
+    this.scaledCache.set(cacheKey, cached);
+    return cached;
+  }
+
+  private getOrCreateWhiteMask(
+    key: SpriteKey,
+    scaledCanvas: HTMLCanvasElement,
+    targetW: number,
+    targetH: number
+  ): HTMLCanvasElement {
+    const whiteKey = `white_${key}_${targetW}x${targetH}`;
+    let cached = this.scaledCache.get(whiteKey);
+    if (cached) return cached;
+
+    cached = document.createElement('canvas');
+    cached.width = targetW;
+    cached.height = targetH;
+    const ctx = cached.getContext('2d')!;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(scaledCanvas, 0, 0);
+    ctx.globalCompositeOperation = 'source-in';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, targetW, targetH);
+
+    this.scaledCache.set(whiteKey, cached);
+    return cached;
+  }
+
   public draw(ctx: CanvasRenderingContext2D, canvasHeight: number): void {
     const key = this.getActiveSpriteKey();
     const img = this.sprites[key];
@@ -233,12 +409,21 @@ export class SpriteActor {
     const drawX = Math.round(this.currentX + shakeX - displayW / 2);
     const drawY = Math.round(this.currentY - displayH);
 
+    // Pre-scale using high-quality area downscaling + edge-snapping when rendering below native master height
+    let sourceToDraw: CanvasImageSource = img;
+    let whiteMask: CanvasImageSource | undefined = this.whiteSilhouettes[key];
+
+    if (displayH < img.naturalHeight) {
+      const scaled = this.getOrCreateScaledCanvas(key, img, displayW, displayH);
+      sourceToDraw = scaled;
+      whiteMask = this.getOrCreateWhiteMask(key, scaled, displayW, displayH);
+    }
+
     ctx.save();
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(img, drawX, drawY, displayW, displayH);
+    ctx.drawImage(sourceToDraw, drawX, drawY, displayW, displayH);
 
     // If hit flash is active, overlay white silhouette
-    const whiteMask = this.whiteSilhouettes[key];
     if (this.hitFlashTimerMs > 0 && whiteMask) {
       ctx.globalAlpha = 0.78;
       ctx.drawImage(whiteMask, drawX, drawY, displayW, displayH);

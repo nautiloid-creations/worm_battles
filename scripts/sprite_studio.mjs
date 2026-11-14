@@ -887,17 +887,17 @@ function cmdImportSingleMaster(args) {
  */
 function cmdCompile(args) {
   const charId = args.char;
-  const maxHeight = Number(args['max-height'] || 128);
+  const maxHeight = Number(args['max-height'] || 256);
   const maxWidth = args['max-width'] ? Number(args['max-width']) : Infinity;
-  const maxColors = Number(args['max-colors'] || 16);
+  const maxColors = Number(args['max-colors'] || 32);
 
   const defaultOutMap = {
     guitar_1: 'public/assets/heroes/guitar_1',
     guitar_2: 'public/assets/heroes/guitar_2',
     bass: 'public/assets/heroes/bass',
     drums: 'public/assets/heroes/drums',
-    air_squid: 'public/assets/bosses/cyber_worm',
-    cyber_worm: 'public/assets/bosses/cyber_worm',
+    air_squid: 'public/assets/bosses/air_squid',
+    cyber_worm: 'public/assets/bosses/air_squid',
     the_worm: 'public/assets/bosses/the_worm',
   };
   const outDir = path.resolve(
@@ -908,7 +908,7 @@ function cmdCompile(args) {
   const { mastersDir } = getCharacterDirs(charId);
   const files = fs
     .readdirSync(mastersDir)
-    .filter((f) => f.endsWith('.png'))
+    .filter((f) => f.endsWith('.png') && !f.includes('_mask') && !f.includes('_guide'))
     .sort();
 
   if (files.length === 0) {
@@ -922,7 +922,7 @@ function cmdCompile(args) {
 
   // Downsample all poses strictly <= maxHeight and <= maxWidth preserving each pose's aspect ratio
   const downsampled = loaded.map((item) => {
-    const scale = Math.min(maxHeight / item.height, maxWidth / item.width);
+    const scale = Math.min(1, Math.min(maxHeight / item.height, maxWidth / item.width));
     const targetW = Math.max(8, Math.floor(item.width * scale));
     const targetH = Math.max(8, Math.floor(item.height * scale));
     return {
@@ -1201,7 +1201,8 @@ function cmdExtractRightPanel(args) {
   assertCharacterPathIsolation(charId, inputPath);
 
   const { mastersDir } = getCharacterDirs(charId);
-  const refMaster = loadImageRGBA(path.join(mastersDir, 'idle_1.png'));
+  const refPose = (args['ref-pose'] || 'idle_1').replace(/\.png$/, '');
+  const refMaster = loadImageRGBA(path.join(mastersDir, `${refPose}.png`));
   const targetW = refMaster.width;
   const targetH = refMaster.height;
 
@@ -1303,7 +1304,7 @@ function cmdPackSheet(args) {
   const { mastersDir, refsDir } = getCharacterDirs(charId);
   const existingFiles = fs
     .readdirSync(mastersDir)
-    .filter((f) => f.endsWith('.png'));
+    .filter((f) => f.endsWith('.png') && !f.includes('_mask') && !f.includes('_guide'));
 
   if (existingFiles.length === 0) {
     throw new Error(`No master PNGs found in ${mastersDir}`);
@@ -1445,11 +1446,13 @@ function loadGeminiApiKey() {
 
 async function cmdGenerateImage(args) {
   const charId = args.char;
-  if (!charId) {
-    throw new Error('Usage: generate-image --char <id> --out <file> [--refs <p1,p2>] [--aspect 1:1|16:9] [--prompt <text>|--prompt-file <file>]');
+  if (!charId && !args.out) {
+    throw new Error('Usage: generate-image [--char <id>] --out <file> [--refs <p1,p2>] [--aspect 1:1|16:9] [--prompt <text>|--prompt-file <file>]');
   }
   const outPath = path.resolve(args.out || `assets_src/characters/${charId}/generated_raw.jpg`);
-  assertCharacterPathIsolation(charId, outPath);
+  if (charId) {
+    assertCharacterPathIsolation(charId, outPath);
+  }
 
   const refPaths = args.refs
     ? String(args.refs)
@@ -1458,8 +1461,10 @@ async function cmdGenerateImage(args) {
         .filter(Boolean)
     : [];
 
-  for (const rp of refPaths) {
-    assertCharacterPathIsolation(charId, rp);
+  if (charId) {
+    for (const rp of refPaths) {
+      assertCharacterPathIsolation(charId, rp);
+    }
   }
 
   let promptText = args.prompt ? String(args.prompt) : '';
@@ -1472,7 +1477,7 @@ async function cmdGenerateImage(args) {
 
   const apiKey = loadGeminiApiKey();
   const aspectRatio = args.aspect || '1:1';
-  const imageSize = args.size || '2K';
+  const imageSize = args.size || '1K';
 
   const parts = [];
   for (const rp of refPaths) {
@@ -1501,9 +1506,10 @@ async function cmdGenerateImage(args) {
   };
 
   const candidateEndpoints = [
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image:generateContent?key=${apiKey}`,
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${apiKey}`,
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`,
-    `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key=${apiKey}`,
   ];
 
   let lastError = null;
