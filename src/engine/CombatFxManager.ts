@@ -8,6 +8,8 @@ export interface ActiveArenaFx {
   targetY?: number;
   speed?: number; // px per ms
   facing: 'right' | 'left';
+  flipX?: boolean;
+  rotation?: 0 | -90 | 90;
   lifeMs: number;
   maxLifeMs: number;
 }
@@ -19,6 +21,9 @@ export interface FxConfig {
 }
 
 export const FX_PALETTES: Record<string, [number, number, number][]> = {
+  'Musical Steel': [
+    [16, 20, 28], [54, 64, 78], [98, 114, 130], [168, 192, 212], [245, 252, 255],
+  ],
   'Solar Flame': [
     [69, 8, 0], [208, 18, 0], [255, 106, 0], [255, 229, 59], [255, 255, 255],
   ],
@@ -58,11 +63,11 @@ export const FX_LIST = [
 ];
 
 export const FX_SIZES = [
-  { value: 32, label: '32px (Tiny)' },
-  { value: 48, label: '48px (Small)' },
-  { value: 64, label: '64px (Normal)' },
-  { value: 96, label: '96px (Large)' },
-  { value: 128, label: '128px (Huge)' },
+  { value: 18, label: '18% Height (Tiny)' },
+  { value: 27, label: '27% Height (Small)' },
+  { value: 36, label: '36% Height (Normal)' },
+  { value: 53, label: '53% Height (Large)' },
+  { value: 71, label: '71% Height (Huge)' },
 ];
 
 export class CombatFxManager {
@@ -197,7 +202,9 @@ export class CombatFxManager {
     durationMs = 450,
     targetX?: number,
     targetY?: number,
-    speed?: number
+    speed?: number,
+    flipX?: boolean,
+    rotation?: 0 | -90 | 90
   ): void {
     this.activeEffects.push({
       fxId,
@@ -209,6 +216,8 @@ export class CombatFxManager {
       targetY: targetY !== undefined ? Math.round(targetY) : undefined,
       speed,
       facing,
+      flipX,
+      rotation,
       lifeMs: durationMs,
       maxLifeMs: durationMs,
     });
@@ -246,24 +255,33 @@ export class CombatFxManager {
   }
 
   public draw(ctx: CanvasRenderingContext2D): void {
+    const canvasH = ctx.canvas.height;
+
     for (const fx of this.activeEffects) {
-      const canvas = this.getOrCreateRecoloredCanvas(fx.fxId, fx.paletteName, fx.size);
+      // Calculate pixel size strictly as % of canvas height (e.g. 1% -> 0.01 * canvasH, 10% -> 0.10 * canvasH)
+      const fraction = Math.max(0.005, fx.size / 100);
+      const pixelSize = Math.max(4, Math.round(canvasH * fraction));
+
+      const canvas = this.getOrCreateRecoloredCanvas(fx.fxId, fx.paletteName, pixelSize);
       if (!canvas) continue;
 
       const progress = 1 - fx.lifeMs / fx.maxLifeMs;
       const alpha = fx.lifeMs < 100 ? fx.lifeMs / 100 : 1.0;
 
       // Gentle floating / pulsing scale
-      const scale = 1.0 + Math.sin(progress * Math.PI) * 0.12;
-      const drawW = Math.round(fx.size * scale);
-      const drawH = Math.round(fx.size * scale);
+      const pulseScale = 1.0 + Math.sin(progress * Math.PI) * 0.12;
+      const drawW = Math.round(pixelSize * pulseScale);
+      const drawH = Math.round(pixelSize * pulseScale);
 
       ctx.save();
       ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
       ctx.imageSmoothingEnabled = false;
 
       ctx.translate(fx.x, fx.y);
-      if (fx.facing === 'left') {
+      if (fx.rotation) {
+        ctx.rotate((fx.rotation * Math.PI) / 180);
+      }
+      if (fx.flipX || fx.facing === 'left') {
         ctx.scale(-1, 1);
       }
 

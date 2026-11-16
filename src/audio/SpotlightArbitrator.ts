@@ -92,8 +92,12 @@ export class SpotlightArbitrator {
 
     // Track front hero changes
     if (frontHero.config.id !== this.currentFrontHeroId) {
+      const prevHeroId = this.currentFrontHeroId;
       this.currentFrontHeroId = frontHero.config.id;
       this.frontTimeElapsedMs = 0;
+      if (prevHeroId && prevHeroId !== frontHero.config.id) {
+        this.stage.handleFrontHeroChanged(prevHeroId, frontHero.config.id);
+      }
     }
     this.frontTimeElapsedMs += dtMs;
 
@@ -107,11 +111,12 @@ export class SpotlightArbitrator {
       }
     }
 
-    // Silence Forfeit Evaluation:
+    // Silence & Downed Forfeit Evaluation:
     // Silence is defined strictly by:
     // 1. Level is down at or below the Silence Floor (<= silenceThresholdFraction * detection threshold)
     // 2. Another band member is actively playing past threshold (hasActiveChallenger)
-    // No time-since-last-hit or lingering activity delay is used, allowing instant handoff when an instrument drops out cold!
+    // A downed front hero is also forfeited immediately to allow a healthy band member into front
+    const frontIsDown = frontHero.state === 'downed';
     const frontChannel = this.audioEngine.getChannelByHeroId(this.currentFrontHeroId);
     const frontScore = frontChannel ? frontChannel.dominanceScore : 0;
     const frontIsPlaying = frontChannel ? frontChannel.isPastThreshold : false;
@@ -123,21 +128,22 @@ export class SpotlightArbitrator {
       ? frontChannel.currentLevel <= silenceFloor
       : true;
 
-    // Check if any challenger is actively playing past threshold
+    // Check if any living challenger is actively playing past threshold
     const hasActiveChallenger = Array.from(this.stage.heroes).some(
-      (h) => h.config.id !== this.currentFrontHeroId && this.audioEngine.getChannelByHeroId(h.config.id)?.isPastThreshold
+      (h) => h.state !== 'downed' && h.config.id !== this.currentFrontHeroId && this.audioEngine.getChannelByHeroId(h.config.id)?.isPastThreshold
     );
 
-    // Silence Forfeit: only fires if front is genuinely down in silence AND another member is actively playing
+    // Silence / Downed Forfeit: fires if front is downed, or genuinely down in silence AND another member is actively playing
     const isSilenceForfeited = frontIsSilent && hasActiveChallenger;
-    const canDisplaceFront = (this.frontTimeElapsedMs >= this.minInFrontTimeMs) || isSilenceForfeited;
+    const canDisplaceFront = frontIsDown || (this.frontTimeElapsedMs >= this.minInFrontTimeMs) || isSilenceForfeited;
 
     if (canDisplaceFront) {
-      // 1. Starvation priority: if any other hero has been out of front for >= maxStarve AND is playing
+      // 1. Starvation priority: if any other living hero has been out of front for >= maxStarve AND is playing
       let mostStarvedHeroId: string | null = null;
       let maxStarveTime = this.maxNotInFrontTimeMs;
 
       for (const hero of this.stage.heroes) {
+        if (hero.state === 'downed') continue; // Downed heroes ignored
         if (hero.config.id === this.currentFrontHeroId) continue;
         const starveTime = this.notInFrontTimeMs.get(hero.config.id) || 0;
         const ch = this.audioEngine.getChannelByHeroId(hero.config.id);
@@ -160,6 +166,7 @@ export class SpotlightArbitrator {
         let highestChallengerScore = -1;
 
         for (const hero of this.stage.heroes) {
+          if (hero.state === 'downed') continue; // Downed heroes ignored
           if (hero.config.id === this.currentFrontHeroId) continue;
           const ch = this.audioEngine.getChannelByHeroId(hero.config.id);
           if (!ch || !ch.isPastThreshold) continue;
@@ -170,12 +177,22 @@ export class SpotlightArbitrator {
           }
         }
 
+        // If front hero is downed, fall back to any living hero even if below threshold
+        if (frontIsDown && !bestChallengerId) {
+          const livingHero = this.stage.heroes.find((h) => h.state !== 'downed');
+          if (livingHero) {
+            bestChallengerId = livingHero.config.id;
+          }
+        }
+
         // Rotate challenger to front if:
+        // - Front is downed, OR
         // - Front has stopped playing, OR
         // - Silence was forfeited, OR
         // - Challenger exceeds incumbent by the advantage margin (+20%)
         if (bestChallengerId) {
           const shouldSwap =
+            frontIsDown ||
             !frontIsPlaying ||
             isSilenceForfeited ||
             highestChallengerScore > frontScore * this.incumbentAdvantageMargin;
@@ -195,6 +212,11 @@ export class SpotlightArbitrator {
     if (!activeFrontHero) return;
 
     for (const hero of this.stage.heroes) {
+      if (hero.state === 'downed') {
+        // Downed heroes cannot attack, lunge, or take spotlight
+        hero.canLunge = false;
+        continue;
+      }
       const isFront = hero.config.id === activeFrontHero.config.id;
       const ch = this.audioEngine.getChannelByHeroId(hero.config.id);
       let holdTimer = this.attackHoldTimerMs.get(hero.config.id) || 0;
@@ -228,16 +250,16 @@ export class SpotlightArbitrator {
           myScore > 0.08 &&
           (otherTotalDominance <= 0 || myScore / (myScore + otherTotalDominance) >= 0.7);
 
-        // Front hero attacks when past threshold or hold timer active
+        // Front hero activates when past threshold or hold timer active
         if (ch && (ch.isPastThreshold || ch.isOnset)) {
           // Soloists get an extended 950ms phrase hold so clean guitar notes link together seamlessly
           holdTimer = isSoloist ? 950 : 250;
-          if (hero.state !== 'attack' && hero.state !== 'ultimate') {
-            hero.setState('attack');
+          if (hero.state !== 'active' && hero.state !== 'attack' && hero.state !== 'ultimate') {
+            hero.setState('active');
           }
         } else {
           holdTimer = Math.max(0, holdTimer - dtMs);
-          if (holdTimer <= 0 && hero.state === 'attack') {
+          if (holdTimer <= 0 && hero.state === 'active') {
             hero.setState('idle');
           }
         }
@@ -245,12 +267,12 @@ export class SpotlightArbitrator {
         // Non-front hero
         if (this.allowInPlaceAttack && ch && ch.isPastThreshold) {
           holdTimer = 220;
-          if (hero.state !== 'attack' && hero.state !== 'ultimate') {
-            hero.setState('attack');
+          if (hero.state !== 'active' && hero.state !== 'attack' && hero.state !== 'ultimate') {
+            hero.setState('active');
           }
         } else {
           holdTimer = Math.max(0, holdTimer - dtMs);
-          if (holdTimer <= 0 && hero.state === 'attack') {
+          if (holdTimer <= 0 && hero.state === 'active') {
             hero.setState('idle');
           }
         }

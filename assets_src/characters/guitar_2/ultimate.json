@@ -11,13 +11,13 @@
     {
       "timeMs": 400,
       "actorPose": "ultimate",
-      "actorXOffset": 16,
-      "actorYOffset": -10,
+      "actorXOffset": 5.0,
+      "actorYOffset": -5.6,
       "dimArena": 0.7,
       "warp": {
         "type": "scanline_undulation",
         "target": "background",
-        "amplitude": 16,
+        "amplitude": 5.0,
         "frequency": 0.05,
         "speed": 0.01,
         "durationMs": 2700
@@ -26,11 +26,11 @@
     {
       "timeMs": 1200,
       "actorPose": "attack_1",
-      "actorXOffset": 30,
+      "actorXOffset": 9.4,
       "spawnFx": {
         "fxId": "fx_orb_lightning",
         "paletteName": "Electric Plasma",
-        "size": 112,
+        "size": 62,
         "xFrac": 0.52,
         "yFrac": 0.6,
         "facing": "right",
@@ -44,7 +44,7 @@
     {
       "timeMs": 2300,
       "actorPose": "attack_2",
-      "actorXOffset": 36,
+      "actorXOffset": 11.3,
       "flashWhite": true,
       "bossReaction": "hit",
       "screenShake": {

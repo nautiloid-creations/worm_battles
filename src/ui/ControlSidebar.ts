@@ -122,7 +122,7 @@ export class ControlSidebar {
       <!-- MAIN MODE TABS -->
       <div class="main-mode-tabs">
         <button id="btn-mode-battle" class="mode-tab-btn active">⚔️ BATTLE STAGE</button>
-        <button id="btn-mode-ultimate" class="mode-tab-btn">🎬 ULTIMATE STUDIO</button>
+        <button id="btn-mode-ultimate" class="mode-tab-btn">🎬 ACTION STUDIO</button>
       </div>
 
       <div id="battle-stage-tab-content" class="main-tab-content">
@@ -286,6 +286,96 @@ export class ControlSidebar {
         </div>
       </section>
 
+      <!-- COMBAT & VITALITY CARD -->
+      <section class="control-card combat-card">
+        <div class="card-title-row">
+          <h2>⚔️ COMBAT &amp; VITALITY SYSTEM</h2>
+          <span class="card-subtitle">HP, Rage, &amp; Ultimates • Auto/Clickable Triggers</span>
+        </div>
+
+        <label class="checkbox-row">
+          <input type="checkbox" id="toggle-combat-enabled" ${this.stage.isCombatEnabled ? 'checked' : ''} />
+          <span>Enable Combat Simulation (HP damage, rage charges &amp; ultimates)</span>
+        </label>
+
+        <label class="checkbox-row" style="margin-top: 4px;">
+          <input type="checkbox" id="toggle-enemy-invincible" ${this.stage.isEnemyInvincible ? 'checked' : ''} />
+          <span>Invincible Enemies (boss never dies; rage &amp; attacks continue)</span>
+        </label>
+
+        <div class="settings-grid">
+          <!-- Boss Max HP -->
+          <div class="setting-item full-width">
+            <div class="setting-label-row">
+              <span>Boss Max HP:</span>
+              <span id="boss-max-hp-val" class="tempo-display">${this.stage.bossMaxHp} HP</span>
+            </div>
+            <input type="range" id="slider-boss-max-hp" min="10" max="1000" step="10" value="${this.stage.bossMaxHp}" title="Adjust maximum health for bosses" />
+          </div>
+
+          <!-- Boss Attack Rage Step -->
+          <div class="setting-item full-width">
+            <div class="setting-label-row">
+              <span>Boss Attack Rage Step:</span>
+              <span id="rage-thresh-val" class="tempo-display">${this.stage.rageThresholdPct}%</span>
+            </div>
+            <input type="range" id="slider-rage-thresh" min="1" max="25" step="1" value="${this.stage.rageThresholdPct}" title="Boss earns 1 attack charge every this % of rage" />
+          </div>
+
+          <!-- Whole-Party Strike Chance -->
+          <div class="setting-item full-width">
+            <div class="setting-label-row">
+              <span>Whole-Party Strike Chance:</span>
+              <span id="party-chance-val" class="tempo-display">${Math.round(this.stage.partyAttackChance * 100)}%</span>
+            </div>
+            <input type="range" id="slider-party-chance" min="0" max="100" step="5" value="${Math.round(this.stage.partyAttackChance * 100)}" title="Chance boss strikes entire band vs front hero" />
+          </div>
+
+          <!-- Hero Ult Gain per Hit -->
+          <div class="setting-item">
+            <div class="setting-label-row">
+              <span>Ult per Hit:</span>
+              <span id="hero-ult-hit-val" class="tempo-display">${this.stage.heroUltPerHitPct.toFixed(2)}%</span>
+            </div>
+            <input type="range" id="slider-hero-ult-hit" min="0" max="5.0" step="0.05" value="${this.stage.heroUltPerHitPct}" title="How much Ult meter front hero gains per attack strike" />
+          </div>
+
+          <!-- Passive Ult Gain per Second -->
+          <div class="setting-item">
+            <div class="setting-label-row">
+              <span>Passive Ult/sec:</span>
+              <span id="hero-ult-passive-val" class="tempo-display">${this.stage.heroPassiveUltPerSec.toFixed(2)}%/s</span>
+            </div>
+            <input type="range" id="slider-hero-ult-passive" min="0" max="2.0" step="0.05" value="${this.stage.heroPassiveUltPerSec}" title="Passive Ult charge gained per second while music plays" />
+          </div>
+
+          <!-- Hero Strike Base Damage -->
+          <div class="setting-item">
+            <div class="setting-label-row">
+              <span>Hero Damage:</span>
+              <span id="hero-dmg-val" class="tempo-display">${this.stage.heroAttackDamage}</span>
+            </div>
+            <input type="range" id="slider-hero-dmg" min="1" max="25" step="1" value="${this.stage.heroAttackDamage}" />
+          </div>
+
+          <!-- Boss Damage -->
+          <div class="setting-item">
+            <div class="setting-label-row">
+              <span>Boss Damage:</span>
+              <span id="boss-single-dmg-val" class="tempo-display">${this.stage.bossSingleDamage}</span>
+            </div>
+            <input type="range" id="slider-boss-single-dmg" min="1" max="50" step="1" value="${this.stage.bossSingleDamage}" />
+          </div>
+        </div>
+
+        <!-- Quick Test Buttons -->
+        <div class="section-actions-row" style="margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap;">
+          <button id="btn-force-boss-attack" class="btn-action-test" style="flex: 1; padding: 6px 8px; font-size: 11px; background: #551122; border: 1px solid #ff4466; color: #fff; cursor: pointer; border-radius: 4px;">⚡ Force Boss Strike</button>
+          <button id="btn-fill-hero-ults" class="btn-action-test" style="flex: 1; padding: 6px 8px; font-size: 11px; background: #113355; border: 1px solid #33aaff; color: #fff; cursor: pointer; border-radius: 4px;">🌟 Fill All Ultimates</button>
+          <button id="btn-reset-vitality" class="btn-action-test" style="flex: 1; padding: 6px 8px; font-size: 11px; background: #223322; border: 1px solid #44bb66; color: #fff; cursor: pointer; border-radius: 4px;">❤️ Reset Vitality</button>
+        </div>
+      </section>
+
       <!-- TIMING & SPRITE SETTINGS CARD -->
       <section class="control-card settings-card">
         <div class="card-title-row">
@@ -317,6 +407,7 @@ export class ControlSidebar {
             <select id="select-canvas-resolution" class="resolution-select">
               ${resOptionsHtml}
             </select>
+            <div id="res-recommended-sizes" class="setting-helper-text">recommended height %: [${this.getRecommendedSizesText(this.stage.currentResKey)}]</div>
           </div>
 
           <!-- Idle Tempo -->
@@ -340,10 +431,10 @@ export class ControlSidebar {
           <!-- Base Lunge Distance -->
           <div class="setting-item full-width">
             <div class="setting-label-row">
-              <span>Lunge Reach (180p base):</span>
-              <span id="lunge-val">${this.stage.baseLungeDistance}px</span>
+              <span>Attack Lunge (% Width):</span>
+              <span id="lunge-val">${this.stage.baseLungePct.toFixed(1)}%</span>
             </div>
-            <input type="range" id="slider-lunge" min="0" max="60" value="${this.stage.baseLungeDistance}" />
+            <input type="range" id="slider-lunge" min="0" max="25" step="0.5" value="${this.stage.baseLungePct}" title="Double-click to reset to default 7.5%" />
           </div>
 
           <!-- Attack FX Hold-Off -->
@@ -353,6 +444,15 @@ export class ControlSidebar {
               <span id="fx-holdoff-val" class="tempo-display">${this.stage.attackFxHoldOffMs}ms</span>
             </div>
             <input type="range" id="slider-fx-holdoff" min="50" max="1000" step="25" value="${this.stage.attackFxHoldOffMs}" title="Minimum cooldown between damage numbers and spark effects" />
+          </div>
+
+          <!-- Hero Attack Meter Threshold -->
+          <div class="setting-item full-width">
+            <div class="setting-label-row">
+              <span>Hero Attack Meter Threshold:</span>
+              <span id="hero-attack-thresh-val" class="tempo-display">${this.stage.heroAttackThresholdPct}%</span>
+            </div>
+            <input type="range" id="slider-hero-attack-thresh" min="5" max="50" step="1" value="${this.stage.heroAttackThresholdPct}" title="Percentage of ultimate meter required between attacks while holding the front spot" />
           </div>
         </div>
 
@@ -932,7 +1032,14 @@ export class ControlSidebar {
 
       const slot = this.stage.heroSlots.get(hero.config.id) || 'front';
       const slotClass = `slot-${slot}`;
-      const sizePct = Math.round(hero.heightFraction * 100);
+      const defaultSizes: Record<string, number> = {
+        hero_guitar_1: 42.0,
+        hero_drums: 44.0,
+        hero_guitar_2: 42.0,
+        hero_bass: 43.0,
+      };
+      const defPct = defaultSizes[hero.config.id] ?? 42.0;
+      const currentPct = Math.round(hero.heightFraction * 200) / 2;
 
       col.innerHTML = `
         <div class="col-header">
@@ -947,9 +1054,9 @@ export class ControlSidebar {
         <div class="actor-size-control">
           <div class="size-label-row">
             <span>Size:</span>
-            <span class="actor-size-val" data-size-val="${hero.config.id}">${sizePct}%</span>
+            <span class="actor-size-val" data-size-val="${hero.config.id}">${currentPct.toFixed(1)}%</span>
           </div>
-          <input type="range" class="actor-size-slider" data-size-input="${hero.config.id}" min="15" max="85" value="${sizePct}" />
+          <input type="range" class="actor-size-slider" data-size-input="${hero.config.id}" min="15" max="85" step="0.5" value="${currentPct}" title="Double-click to reset to default ${defPct.toFixed(1)}%" />
         </div>
       `;
 
@@ -975,9 +1082,13 @@ export class ControlSidebar {
       const sizeSlider = col.querySelector<HTMLInputElement>(`[data-size-input="${hero.config.id}"]`)!;
       const sizeValDisplay = col.querySelector<HTMLElement>(`[data-size-val="${hero.config.id}"]`)!;
       sizeSlider.addEventListener('input', () => {
-        const pct = Number(sizeSlider.value);
+        const pct = Math.round(Number(sizeSlider.value) * 2) / 2;
         hero.heightFraction = pct / 100;
-        sizeValDisplay.textContent = `${pct}%`;
+        sizeValDisplay.textContent = `${pct.toFixed(1)}%`;
+      });
+      sizeSlider.addEventListener('dblclick', () => {
+        sizeSlider.value = String(defPct);
+        sizeSlider.dispatchEvent(new Event('input'));
       });
 
       this.heroStateBtns.set(hero.config.id, btnMap);
@@ -1008,7 +1119,8 @@ export class ControlSidebar {
     this.stage.enemies.forEach((enemy, idx) => {
       const col = document.createElement('div');
       col.className = 'actor-column enemy-col';
-      const sizePct = Math.round(enemy.heightFraction * 100);
+      const defPct = enemy.config.folderPath.includes('air_squid') ? 75.0 : 55.0;
+      const currentPct = Math.round(enemy.heightFraction * 200) / 2;
 
       col.innerHTML = `
         <div class="col-header enemy-header">
@@ -1027,9 +1139,9 @@ export class ControlSidebar {
         <div class="actor-size-control">
           <div class="size-label-row">
             <span>Size:</span>
-            <span class="actor-size-val" data-size-val="${enemy.config.id}">${sizePct}%</span>
+            <span class="actor-size-val" data-size-val="${enemy.config.id}">${currentPct.toFixed(1)}%</span>
           </div>
-          <input type="range" class="actor-size-slider" data-size-input="${enemy.config.id}" min="15" max="85" value="${sizePct}" />
+          <input type="range" class="actor-size-slider" data-size-input="${enemy.config.id}" min="15" max="85" step="0.5" value="${currentPct}" title="Double-click to reset to default ${defPct.toFixed(1)}%" />
         </div>
       `;
 
@@ -1064,9 +1176,13 @@ export class ControlSidebar {
       const sizeSlider = col.querySelector<HTMLInputElement>(`[data-size-input="${enemy.config.id}"]`)!;
       const sizeValDisplay = col.querySelector<HTMLElement>(`[data-size-val="${enemy.config.id}"]`)!;
       sizeSlider.addEventListener('input', () => {
-        const pct = Number(sizeSlider.value);
+        const pct = Math.round(Number(sizeSlider.value) * 2) / 2;
         enemy.heightFraction = pct / 100;
-        sizeValDisplay.textContent = `${pct}%`;
+        sizeValDisplay.textContent = `${pct.toFixed(1)}%`;
+      });
+      sizeSlider.addEventListener('dblclick', () => {
+        sizeSlider.value = String(defPct);
+        sizeSlider.dispatchEvent(new Event('input'));
       });
 
       this.enemyStateBtns.set(enemy.config.id, btnMap);
@@ -1374,7 +1490,7 @@ export class ControlSidebar {
           resKey: resSelect.value,
           idleBpm: Number(idleSlider.value),
           attackBpm: Number(attackSlider.value),
-          lungePx: Number(lungeSlider.value),
+          lungePct: parseFloat(lungeSlider.value) || 7.5,
           autoHit: autoHitCheckbox.checked,
           attackFxHoldOffMs: Number(fxHoldOffSlider.value),
         });
@@ -1394,10 +1510,14 @@ export class ControlSidebar {
     // Canvas Resolution (Master Quality Control)
     const resSelect = this.container.querySelector<HTMLSelectElement>('#select-canvas-resolution')!;
     const resModeDisplay = this.container.querySelector<HTMLElement>('#res-mode-display')!;
+    const resRecDisplay = this.container.querySelector<HTMLElement>('#res-recommended-sizes');
     resSelect.addEventListener('change', () => {
       const resKey = resSelect.value;
       this.stage.setCanvasResolution(resKey);
       resModeDisplay.textContent = RESOLUTION_PRESETS[resKey].label;
+      if (resRecDisplay) {
+        resRecDisplay.textContent = `recommended height %: [${this.getRecommendedSizesText(resKey)}]`;
+      }
     });
 
     // Idle Tempo Slider
@@ -1424,9 +1544,14 @@ export class ControlSidebar {
     const lungeSlider = this.container.querySelector<HTMLInputElement>('#slider-lunge')!;
     const lungeVal = this.container.querySelector<HTMLElement>('#lunge-val')!;
     lungeSlider.addEventListener('input', () => {
-      const px = Number(lungeSlider.value);
-      lungeVal.textContent = `${px}px`;
-      this.stage.setBaseLungeDistance(px);
+      const val = parseFloat(lungeSlider.value) || 0;
+      const rounded = Math.round(val * 2) / 2;
+      lungeVal.textContent = `${rounded.toFixed(1)}%`;
+      this.stage.setBaseLungePct(rounded);
+    });
+    lungeSlider.addEventListener('dblclick', () => {
+      lungeSlider.value = '7.5';
+      lungeSlider.dispatchEvent(new Event('input'));
     });
 
     // Auto-hit checkbox
@@ -1442,6 +1567,98 @@ export class ControlSidebar {
       const ms = Number(fxHoldOffSlider.value);
       fxHoldOffVal.textContent = `${ms}ms`;
       this.stage.attackFxHoldOffMs = ms;
+    });
+
+    // Hero Attack Meter Threshold Slider
+    const heroAttackThreshSlider = this.container.querySelector<HTMLInputElement>('#slider-hero-attack-thresh');
+    const heroAttackThreshVal = this.container.querySelector<HTMLElement>('#hero-attack-thresh-val');
+    heroAttackThreshSlider?.addEventListener('input', () => {
+      const val = parseInt(heroAttackThreshSlider.value, 10) || 10;
+      if (heroAttackThreshVal) heroAttackThreshVal.textContent = `${val}%`;
+      this.stage.heroAttackThresholdPct = val;
+    });
+
+    // --- COMBAT & VITALITY CONTROLS ---
+    const combatToggle = this.container.querySelector<HTMLInputElement>('#toggle-combat-enabled');
+    combatToggle?.addEventListener('change', () => {
+      this.stage.isCombatEnabled = combatToggle.checked;
+    });
+
+    const enemyInvincibleToggle = this.container.querySelector<HTMLInputElement>('#toggle-enemy-invincible');
+    enemyInvincibleToggle?.addEventListener('change', () => {
+      this.stage.isEnemyInvincible = enemyInvincibleToggle.checked;
+    });
+
+    const bossMaxHpSlider = this.container.querySelector<HTMLInputElement>('#slider-boss-max-hp');
+    const bossMaxHpVal = this.container.querySelector<HTMLElement>('#boss-max-hp-val');
+    bossMaxHpSlider?.addEventListener('input', () => {
+      const val = Number(bossMaxHpSlider.value);
+      this.stage.setBossMaxHp(val);
+      if (bossMaxHpVal) bossMaxHpVal.textContent = `${val} HP`;
+    });
+
+    const rageThreshSlider = this.container.querySelector<HTMLInputElement>('#slider-rage-thresh');
+    const rageThreshVal = this.container.querySelector<HTMLElement>('#rage-thresh-val');
+    rageThreshSlider?.addEventListener('input', () => {
+      const val = Number(rageThreshSlider.value);
+      this.stage.rageThresholdPct = val;
+      if (rageThreshVal) rageThreshVal.textContent = `${val}%`;
+    });
+
+    const partyChanceSlider = this.container.querySelector<HTMLInputElement>('#slider-party-chance');
+    const partyChanceVal = this.container.querySelector<HTMLElement>('#party-chance-val');
+    partyChanceSlider?.addEventListener('input', () => {
+      const val = Number(partyChanceSlider.value);
+      this.stage.partyAttackChance = val / 100;
+      if (partyChanceVal) partyChanceVal.textContent = `${val}%`;
+    });
+
+    const heroUltHitSlider = this.container.querySelector<HTMLInputElement>('#slider-hero-ult-hit');
+    const heroUltHitVal = this.container.querySelector<HTMLElement>('#hero-ult-hit-val');
+    heroUltHitSlider?.addEventListener('input', () => {
+      const val = Number(heroUltHitSlider.value);
+      this.stage.heroUltPerHitPct = val;
+      if (heroUltHitVal) heroUltHitVal.textContent = `${val.toFixed(2)}%`;
+    });
+
+    const heroUltPassiveSlider = this.container.querySelector<HTMLInputElement>('#slider-hero-ult-passive');
+    const heroUltPassiveVal = this.container.querySelector<HTMLElement>('#hero-ult-passive-val');
+    heroUltPassiveSlider?.addEventListener('input', () => {
+      const val = Number(heroUltPassiveSlider.value);
+      this.stage.heroPassiveUltPerSec = val;
+      if (heroUltPassiveVal) heroUltPassiveVal.textContent = `${val.toFixed(2)}%/s`;
+    });
+
+    const heroDmgSlider = this.container.querySelector<HTMLInputElement>('#slider-hero-dmg');
+    const heroDmgVal = this.container.querySelector<HTMLElement>('#hero-dmg-val');
+    heroDmgSlider?.addEventListener('input', () => {
+      const val = Number(heroDmgSlider.value);
+      this.stage.heroAttackDamage = val;
+      if (heroDmgVal) heroDmgVal.textContent = `${val}`;
+    });
+
+    const bossSingleDmgSlider = this.container.querySelector<HTMLInputElement>('#slider-boss-single-dmg');
+    const bossSingleDmgVal = this.container.querySelector<HTMLElement>('#boss-single-dmg-val');
+    bossSingleDmgSlider?.addEventListener('input', () => {
+      const val = Number(bossSingleDmgSlider.value);
+      this.stage.bossSingleDamage = val;
+      this.stage.bossPartyDamage = val;
+      if (bossSingleDmgVal) bossSingleDmgVal.textContent = `${val}`;
+    });
+
+    const forceBossBtn = this.container.querySelector<HTMLButtonElement>('#btn-force-boss-attack');
+    forceBossBtn?.addEventListener('click', () => {
+      this.stage.forceBossAttack();
+    });
+
+    const fillUltsBtn = this.container.querySelector<HTMLButtonElement>('#btn-fill-hero-ults');
+    fillUltsBtn?.addEventListener('click', () => {
+      this.stage.fillAllHeroUlts();
+    });
+
+    const resetVitalityBtn = this.container.querySelector<HTMLButtonElement>('#btn-reset-vitality');
+    resetVitalityBtn?.addEventListener('click', () => {
+      this.stage.resetCombatVitality();
     });
   }
 
@@ -1599,5 +1816,16 @@ export class ControlSidebar {
         activeLabel.textContent = `${enemy.getActiveSpriteKey()}.png`;
       }
     }
+  }
+
+  private getRecommendedSizesText(resKey: string): string {
+    const map: Record<string, string[]> = {
+      '320x180': ['35.5%', '47.0%', '53.5%', '71.0%'],
+      '480x270': ['31.5%', '35.5%', '47.5%', '59.5%', '71.0%'],
+      '640x360': ['26.5%', '35.5%', '44.5%', '53.5%', '71.0%'],
+      '960x540': ['23.5%', '29.5%', '35.5%', '47.5%', '71.0%'],
+    };
+    const list = map[resKey] || map['480x270'];
+    return list.join(', ');
   }
 }

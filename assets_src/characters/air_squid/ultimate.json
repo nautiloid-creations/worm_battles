@@ -15,7 +15,7 @@
       "warp": {
         "type": "void_vortex",
         "target": "background",
-        "amplitude": 20,
+        "amplitude": 6.3,
         "frequency": 0.055,
         "speed": 0.012,
         "durationMs": 2800
@@ -23,7 +23,7 @@
       "spawnFx": {
         "fxId": "fx_orb_lightning",
         "paletteName": "Toxic Acid",
-        "size": 112,
+        "size": 62,
         "xFrac": 0.45,
         "yFrac": 0.55,
         "facing": "left",

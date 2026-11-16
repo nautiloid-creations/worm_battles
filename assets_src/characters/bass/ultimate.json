@@ -15,7 +15,7 @@
       "warp": {
         "type": "void_vortex",
         "target": "all",
-        "amplitude": 22,
+        "amplitude": 6.9,
         "frequency": 0.06,
         "speed": 0.012,
         "durationMs": 2600
@@ -23,7 +23,7 @@
       "spawnFx": {
         "fxId": "fx_orb_crackling",
         "paletteName": "Void Magic",
-        "size": 128,
+        "size": 71,
         "xFrac": 0.5,
         "yFrac": 0.6,
         "durationMs": 2500
@@ -32,7 +32,7 @@
     {
       "timeMs": 2000,
       "actorPose": "attack_1",
-      "actorXOffset": 25,
+      "actorXOffset": 7.8,
       "flashWhite": true,
       "bossReaction": "hit",
       "screenShake": {

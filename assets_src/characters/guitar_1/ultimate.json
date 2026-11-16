@@ -1,73 +1,362 @@
 {
   "actorId": "hero_guitar_1",
   "name": "Solo of the Dragon Sun",
-  "durationMs": 3800,
+  "durationMs": 4500,
   "keyframes": [
     {
       "timeMs": 0,
       "actorPose": "idle_1",
-      "dimArena": 0.2
-    },
-    {
-      "timeMs": 400,
-      "actorPose": "ultimate",
-      "actorXOffset": 15,
-      "actorYOffset": -12,
-      "dimArena": 0.65,
-      "warp": {
-        "type": "scanline_undulation",
-        "target": "background",
-        "amplitude": 14,
-        "frequency": 0.045,
-        "speed": 0.008,
-        "durationMs": 2800
-      }
-    },
-    {
-      "timeMs": 1100,
-      "actorPose": "attack_1",
-      "actorXOffset": 28,
-      "spawnFx": {
-        "fxId": "fx_fireball",
-        "paletteName": "Solar Flame",
-        "size": 96,
-        "xFrac": 0.5,
-        "yFrac": 0.62,
-        "facing": "right",
-        "durationMs": 1400
+      "dimArena": 0.2,
+      "actor": {
+        "pose": "idle_1",
+        "xOffset": 4,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 0
       },
-      "screenShake": {
-        "intensity": 6,
-        "durationMs": 400
+      "arena": {
+        "darkness": 0.15,
+        "screenShake": {
+          "intensity": 0,
+          "durationMs": 0
+        },
+        "flash": {
+          "enabled": false,
+          "opacity": 85,
+          "paletteName": "White"
+        }
       }
     },
     {
-      "timeMs": 2200,
-      "actorPose": "attack_2",
-      "actorXOffset": 34,
-      "flashWhite": true,
-      "bossReaction": "hit",
-      "screenShake": {
-        "intensity": 10,
+      "timeMs": 500,
+      "actorPose": "ultimate_1",
+      "actorXOffset": 6.3,
+      "actorYOffset": -5.6,
+      "dimArena": 0.5,
+      "actor": {
+        "pose": "ultimate_1",
+        "xOffset": 4,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 0
+      },
+      "arena": {
+        "darkness": 0.3,
+        "screenShake": {
+          "intensity": 0,
+          "durationMs": 0
+        },
+        "flash": {
+          "enabled": false,
+          "opacity": 85,
+          "paletteName": "White"
+        }
+      }
+    },
+    {
+      "timeMs": 1000,
+      "actorPose": "ultimate_1",
+      "actorXOffset": 6.3,
+      "spawnFx": {
+        "fxId": "fx_orb_lightning",
+        "paletteName": "Void Magic",
+        "size": 5,
+        "xFrac": 0.53,
+        "yFrac": 0.48,
+        "facing": "right",
         "durationMs": 500
       },
-      "spawnFx": {
-        "fxId": "fx_note_quarter",
-        "paletteName": "Chrome & Blood",
-        "size": 64,
-        "xFrac": 0.72,
-        "yFrac": 0.58,
-        "facing": "right",
-        "durationMs": 1000
-      }
+      "actorYOffset": -5.6,
+      "actorShake": 0.1,
+      "dimArena": 0.5,
+      "actor": {
+        "pose": "ultimate_1",
+        "xOffset": 4,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 0.1
+      },
+      "arena": {
+        "darkness": 0.45,
+        "screenShake": {
+          "intensity": 0,
+          "durationMs": 0
+        },
+        "flash": {
+          "enabled": false,
+          "opacity": 85,
+          "paletteName": "White"
+        }
+      },
+      "sprites": [
+        {
+          "fxId": "fx_orb_lightning",
+          "paletteName": "Void Magic",
+          "size": 5,
+          "xFrac": 0.5,
+          "yFrac": 0.54,
+          "facing": "right",
+          "durationMs": 500,
+          "type": "static"
+        }
+      ]
     },
     {
-      "timeMs": 3400,
-      "actorPose": "idle_1",
-      "actorXOffset": 0,
+      "timeMs": 1500,
+      "actorPose": "ultimate_1",
+      "actorXOffset": 6.3,
+      "actorYOffset": -5.6,
+      "dimArena": 0.5,
+      "actorShake": 0.2,
+      "spawnFx": {
+        "fxId": "fx_orb_lightning",
+        "paletteName": "Void Magic",
+        "size": 10,
+        "xFrac": 0.53,
+        "yFrac": 0.48,
+        "facing": "left",
+        "durationMs": 500
+      },
+      "actor": {
+        "pose": "ultimate_1",
+        "xOffset": 4,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 0.2
+      },
+      "arena": {
+        "darkness": 0.6,
+        "screenShake": {
+          "intensity": 0,
+          "durationMs": 0
+        },
+        "flash": {
+          "enabled": false,
+          "opacity": 85,
+          "paletteName": "White"
+        }
+      },
+      "sprites": [
+        {
+          "fxId": "fx_orb_lightning",
+          "paletteName": "Void Magic",
+          "size": 10,
+          "xFrac": 0.5,
+          "yFrac": 0.54,
+          "facing": "left",
+          "durationMs": 500,
+          "type": "static",
+          "flipX": false,
+          "rotation": 90
+        }
+      ]
+    },
+    {
+      "timeMs": 2000,
+      "actorPose": "ultimate_1",
+      "actorXOffset": 6.3,
+      "actorYOffset": -5.6,
+      "dimArena": 0.5,
+      "actorShake": 0.5,
+      "spawnFx": {
+        "fxId": "fx_orb_lightning",
+        "paletteName": "Void Magic",
+        "size": 15,
+        "xFrac": 0.53,
+        "yFrac": 0.48,
+        "facing": "right",
+        "durationMs": 500
+      },
+      "actor": {
+        "pose": "ultimate_1",
+        "xOffset": 4,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 0.5
+      },
+      "arena": {
+        "darkness": 0.75,
+        "screenShake": {
+          "intensity": 0,
+          "durationMs": 0
+        },
+        "flash": {
+          "enabled": false,
+          "opacity": 85,
+          "paletteName": "White"
+        }
+      },
+      "sprites": [
+        {
+          "fxId": "fx_orb_lightning",
+          "paletteName": "Void Magic",
+          "size": 15,
+          "xFrac": 0.5,
+          "yFrac": 0.54,
+          "facing": "right",
+          "durationMs": 500,
+          "type": "static",
+          "rotation": 0
+        }
+      ]
+    },
+    {
+      "timeMs": 2500,
+      "actorPose": "ultimate_1",
+      "actorXOffset": 6.3,
+      "actorYOffset": -5.6,
+      "dimArena": 0.5,
+      "actorShake": 1,
+      "spawnFx": {
+        "fxId": "fx_orb_lightning",
+        "paletteName": "Void Magic",
+        "size": 20,
+        "xFrac": 0.53,
+        "yFrac": 0.48,
+        "facing": "left",
+        "durationMs": 500
+      },
+      "actor": {
+        "pose": "ultimate_1",
+        "xOffset": 4,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 1
+      },
+      "arena": {
+        "darkness": 0.9,
+        "screenShake": {
+          "intensity": 0,
+          "durationMs": 0
+        },
+        "flash": {
+          "enabled": false,
+          "opacity": 85,
+          "paletteName": "White"
+        }
+      },
+      "sprites": [
+        {
+          "fxId": "fx_orb_lightning",
+          "paletteName": "Void Magic",
+          "size": 20,
+          "xFrac": 0.5,
+          "yFrac": 0.54,
+          "facing": "left",
+          "durationMs": 500,
+          "type": "static",
+          "rotation": -90
+        }
+      ]
+    },
+    {
+      "timeMs": 2950,
+      "type": "single"
+    },
+    {
+      "timeMs": 3000,
+      "actorPose": "ultimate_2",
+      "actorXOffset": -6.3,
       "actorYOffset": 0,
-      "dimArena": 0,
-      "bossReaction": "idle"
+      "actorShake": 0,
+      "spawnFx": {
+        "fxId": "fx_orb_lightning",
+        "paletteName": "Void Magic",
+        "size": 20,
+        "xFrac": 0.53,
+        "yFrac": 0.48,
+        "facing": "right",
+        "durationMs": 500,
+        "targetXFrac": 0.78,
+        "targetYFrac": 0.48,
+        "speed": 0.2
+      },
+      "actor": {
+        "pose": "ultimate_2",
+        "xOffset": -10,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 0
+      },
+      "sprites": [
+        {
+          "fxId": "fx_orb_lightning",
+          "paletteName": "Void Magic",
+          "size": 20,
+          "xFrac": 0.5,
+          "yFrac": 0.54,
+          "facing": "right",
+          "durationMs": 500,
+          "targetXFrac": 0.75,
+          "targetYFrac": 0.54,
+          "speed": 0.2,
+          "type": "projectile"
+        }
+      ]
+    },
+    {
+      "timeMs": 3500,
+      "spawnFx": {
+        "fxId": "fx_orb_crackling",
+        "paletteName": "Void Magic",
+        "size": 40,
+        "xFrac": 0.78,
+        "yFrac": 0.48,
+        "facing": "right",
+        "durationMs": 500
+      },
+      "bossReaction": "hit",
+      "enemies": {
+        "pose": "hit",
+        "xOffset": 0,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 0
+      },
+      "sprites": [
+        {
+          "fxId": "fx_orb_crackling",
+          "paletteName": "Void Magic",
+          "size": 50,
+          "xFrac": 0.75,
+          "yFrac": 0.54,
+          "facing": "right",
+          "durationMs": 1000,
+          "type": "static"
+        }
+      ]
+    },
+    {
+      "timeMs": 4000,
+      "type": "single",
+      "actor": {
+        "pose": "idle_1",
+        "xOffset": 4,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 0
+      },
+      "arena": {
+        "darkness": 0,
+        "screenShake": {
+          "intensity": 0,
+          "durationMs": 0
+        },
+        "flash": {
+          "enabled": false,
+          "opacity": 85,
+          "paletteName": "White"
+        }
+      }
     }
   ]
 }

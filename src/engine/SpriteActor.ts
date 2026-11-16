@@ -1,8 +1,10 @@
-export type ActorState = 'idle' | 'attack' | 'hit' | 'downed' | 'ultimate';
+export type ActorState = 'idle' | 'active' | 'attack' | 'hit' | 'downed' | 'ultimate';
 
 export type SpriteKey =
   | 'idle_1'
   | 'idle_2'
+  | 'active_1'
+  | 'active_2'
   | 'attack_1'
   | 'attack_2'
   | 'hit'
@@ -15,6 +17,8 @@ export type SpriteKey =
 export const ALL_SPRITE_KEYS: SpriteKey[] = [
   'idle_1',
   'idle_2',
+  'active_1',
+  'active_2',
   'attack_1',
   'attack_2',
   'hit',
@@ -58,12 +62,23 @@ export class SpriteActor {
   public isManuallyLatched = false;
   public canLunge = true;
   public forcedSpriteKey: SpriteKey | null = null;
+  public flipX = false;
+  public rotation: 0 | -90 | 90 = 0;
 
   // Loaded HTMLImageElement map + white silhouette canvas cache
   private sprites: Partial<Record<SpriteKey, HTMLImageElement>> = {};
   private whiteSilhouettes: Partial<Record<SpriteKey, HTMLCanvasElement>> = {};
   private scaledCache: Map<string, HTMLCanvasElement> = new Map();
   public isLoaded = false;
+
+  // Vitality & Combat Meters
+  public maxHp = 100;
+  public currentHp = 100;
+  public maxMeter = 100;
+  public currentMeter = 0; // Ultimate for heroes (0..100), Rage for enemies (0..100)
+  public attackCharges = 0; // Accumulated attack eligibility tokens (for enemies)
+  public rageAccumulator = 0; // Accumulates incoming rage towards the next charge threshold
+  public downTimerMs = 0; // Time spent continuously in downed state (ms)
 
   // Optional callback fired each time an attack frame toggles (for triggering opponent hit/sparks)
   public onAttackFrameToggle?: (frame: 0 | 1) => void;
@@ -73,6 +88,46 @@ export class SpriteActor {
     this.heightFraction = config.heightFraction;
     this.currentX = config.homeX;
     this.currentY = config.homeY;
+  }
+
+  public takeDamage(amount: number): number {
+    const actual = Math.min(this.currentHp, Math.max(0, amount));
+    this.currentHp = Math.max(0, this.currentHp - actual);
+    if (this.currentHp <= 0) {
+      if (this.state !== 'downed') {
+        this.downTimerMs = 0;
+      }
+      this.state = 'downed';
+      this.forcedSpriteKey = null;
+    }
+    return actual;
+  }
+
+  public heal(amount: number): number {
+    const prev = this.currentHp;
+    this.currentHp = Math.min(this.maxHp, this.currentHp + Math.max(0, amount));
+    if (this.currentHp > 0 && this.state === 'downed' && this.downTimerMs >= 5000) {
+      this.state = 'idle';
+      this.downTimerMs = 0;
+    }
+    return this.currentHp - prev;
+  }
+
+  public addMeter(amount: number): number {
+    const prev = this.currentMeter;
+    this.currentMeter = Math.min(this.maxMeter, this.currentMeter + Math.max(0, amount));
+    return this.currentMeter - prev;
+  }
+
+  public resetVitality(): void {
+    this.currentHp = this.maxHp;
+    this.currentMeter = 0;
+    this.attackCharges = 0;
+    this.rageAccumulator = 0;
+    this.downTimerMs = 0;
+    if (this.state === 'downed') {
+      this.state = 'idle';
+    }
   }
 
   public setHome(x: number, y: number): void {
@@ -109,6 +164,27 @@ export class SpriteActor {
     );
 
     await Promise.all(promises);
+
+    // Bidirectional alias between active and attack poses:
+    // If active_1 / active_2 not found on disk, alias to attack_1 / attack_2
+    if (!this.sprites.active_1 && this.sprites.attack_1) {
+      this.sprites.active_1 = this.sprites.attack_1;
+      this.whiteSilhouettes.active_1 = this.whiteSilhouettes.attack_1;
+    }
+    if (!this.sprites.active_2 && this.sprites.attack_2) {
+      this.sprites.active_2 = this.sprites.attack_2;
+      this.whiteSilhouettes.active_2 = this.whiteSilhouettes.attack_2;
+    }
+    // If attack_1 / attack_2 not found on disk, alias to active_1 / active_2 as fallback
+    if (!this.sprites.attack_1 && this.sprites.active_1) {
+      this.sprites.attack_1 = this.sprites.active_1;
+      this.whiteSilhouettes.attack_1 = this.whiteSilhouettes.active_1;
+    }
+    if (!this.sprites.attack_2 && this.sprites.active_2) {
+      this.sprites.attack_2 = this.sprites.active_2;
+      this.whiteSilhouettes.attack_2 = this.whiteSilhouettes.active_2;
+    }
+
     this.isLoaded = true;
   }
 
@@ -134,6 +210,10 @@ export class SpriteActor {
   }
 
   public setState(nextState: ActorState): void {
+    if (this.state === 'downed' && this.currentHp <= 0 && nextState !== 'downed') {
+      return; // Must be healed/revived first
+    }
+
     if (this.state === nextState) {
       if (nextState === 'hit') {
         // Re-trigger flash, shake, and reset auto-recovery window
@@ -148,6 +228,10 @@ export class SpriteActor {
     this.frameIndex = 0;
     this.frameTimerMs = 0;
 
+    if (nextState === 'downed') {
+      this.downTimerMs = 0;
+    }
+
     if (nextState === 'hit') {
       this.hitFlashTimerMs = 110;
       this.hitShakeTimerMs = 220;
@@ -159,6 +243,11 @@ export class SpriteActor {
     }
   }
 
+  public triggerHitReaction(flashMs = 110, shakeMs = 220): void {
+    this.hitFlashTimerMs = flashMs;
+    this.hitShakeTimerMs = shakeMs;
+  }
+
   public resetCombatState(): void {
     this.state = 'idle';
     this.forcedSpriteKey = null;
@@ -166,6 +255,7 @@ export class SpriteActor {
     this.hitFlashTimerMs = 0;
     this.hitShakeTimerMs = 0;
     this.hitAutoRecoveryTimerMs = 0;
+    this.downTimerMs = 0;
     this.currentX = this.config.homeX;
     this.currentY = this.config.homeY;
     this.frameIndex = 0;
@@ -173,20 +263,45 @@ export class SpriteActor {
   }
 
   public getActiveSpriteKey(): SpriteKey {
-    if (this.forcedSpriteKey && this.sprites[this.forcedSpriteKey]) {
-      return this.forcedSpriteKey;
+    if (this.forcedSpriteKey) {
+      if (this.sprites[this.forcedSpriteKey]) {
+        return this.forcedSpriteKey;
+      }
+      // If attack_1 or attack_2 forced but not yet drawn on disk, fall back to active
+      if (this.forcedSpriteKey === 'attack_1') {
+        if (this.sprites.active_1) return 'active_1';
+        return 'idle_1';
+      }
+      if (this.forcedSpriteKey === 'attack_2') {
+        if (this.sprites.active_2) return 'active_2';
+        if (this.sprites.active_1) return 'active_1';
+        return 'idle_1';
+      }
     }
     switch (this.state) {
       case 'idle':
         if (this.frameIndex === 1 && this.sprites.idle_2) return 'idle_2';
         return 'idle_1';
+      case 'active':
+        if (this.frameIndex === 1 && (this.sprites.active_2 || this.sprites.attack_2)) {
+          return this.sprites.active_2 ? 'active_2' : 'attack_2';
+        }
+        return this.sprites.active_1 ? 'active_1' : (this.sprites.attack_1 ? 'attack_1' : 'idle_1');
       case 'attack':
-        if (this.frameIndex === 1 && this.sprites.attack_2) return 'attack_2';
-        return this.sprites.attack_1 ? 'attack_1' : 'idle_1';
+        // Check for dedicated attack pose sequence; if absent, fall back to active
+        if (this.frameIndex === 1) {
+          if (this.sprites.attack_2) return 'attack_2';
+          if (this.sprites.active_2) return 'active_2';
+          if (this.sprites.active_1) return 'active_1';
+          return 'idle_1';
+        }
+        if (this.sprites.attack_1) return 'attack_1';
+        if (this.sprites.active_1) return 'active_1';
+        return 'idle_1';
       case 'hit':
         return this.sprites.hit ? 'hit' : 'idle_1';
       case 'downed':
-        return this.sprites.downed ? 'downed' : 'idle_1';
+        return this.sprites.downed ? 'downed' : (this.sprites.hit ? 'hit' : 'idle_1');
       case 'ultimate':
         return this.sprites.ultimate
           ? 'ultimate'
@@ -203,8 +318,8 @@ export class SpriteActor {
   }
 
   public update(dtMs: number): void {
-    // 1. Update 2-frame loops for 'idle' and 'attack'
-    if (this.state === 'idle' || this.state === 'attack') {
+    // 1. Update 2-frame loops for 'idle', 'active', and 'attack'
+    if (this.state === 'idle' || this.state === 'active' || this.state === 'attack') {
       const interval =
         this.state === 'idle' ? this.idleIntervalMs : this.attackIntervalMs;
       this.frameTimerMs += dtMs;
@@ -239,6 +354,11 @@ export class SpriteActor {
       if (this.hitAutoRecoveryTimerMs <= 0) {
         this.setState('idle');
       }
+    }
+
+    // 4. Increment down timer while in downed state
+    if (this.state === 'downed') {
+      this.downTimerMs += dtMs;
     }
   }
 
@@ -406,9 +526,6 @@ export class SpriteActor {
       shakeX = Math.sin(this.hitShakeTimerMs * 0.15) * 3;
     }
 
-    const drawX = Math.round(this.currentX + shakeX - displayW / 2);
-    const drawY = Math.round(this.currentY - displayH);
-
     // Pre-scale using high-quality area downscaling + edge-snapping when rendering below native master height
     let sourceToDraw: CanvasImageSource = img;
     let whiteMask: CanvasImageSource | undefined = this.whiteSilhouettes[key];
@@ -421,12 +538,25 @@ export class SpriteActor {
 
     ctx.save();
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(sourceToDraw, drawX, drawY, displayW, displayH);
+
+    // Center pivot for rotation and flipping
+    const centerX = Math.round(this.currentX + shakeX);
+    const centerY = Math.round(this.currentY - displayH / 2);
+    ctx.translate(centerX, centerY);
+
+    if (this.rotation) {
+      ctx.rotate((this.rotation * Math.PI) / 180);
+    }
+    if (this.flipX) {
+      ctx.scale(-1, 1);
+    }
+
+    ctx.drawImage(sourceToDraw, -displayW / 2, -displayH / 2, displayW, displayH);
 
     // If hit flash is active, overlay white silhouette
     if (this.hitFlashTimerMs > 0 && whiteMask) {
       ctx.globalAlpha = 0.78;
-      ctx.drawImage(whiteMask, drawX, drawY, displayW, displayH);
+      ctx.drawImage(whiteMask, -displayW / 2, -displayH / 2, displayW, displayH);
     }
     ctx.restore();
   }

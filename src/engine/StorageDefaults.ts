@@ -20,7 +20,8 @@ export interface SettingsDefaults {
   resKey: string;
   idleBpm: number;
   attackBpm: number;
-  lungePx: number;
+  lungePct?: number;
+  lungePx?: number;
   autoHit: boolean;
   attackFxHoldOffMs?: number;
 }

@@ -450,6 +450,14 @@ body {
   grid-column: span 2;
 }
 
+.setting-helper-text {
+  font-size: 9.5px;
+  color: #94a3b8;
+  margin-top: 5px;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
 .resolution-select {
   width: 100%;
   background: #110e20;
@@ -1271,6 +1279,38 @@ input[type='range'] {
   color: var(--text-muted);
 }
 
+.studio-selectors-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #140f2b;
+  border: 1px solid #362c63;
+  padding: 10px 14px;
+  border-radius: 6px;
+}
+
+.studio-select-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.studio-select-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.studio-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .studio-preset-bar {
   display: flex;
   align-items: center;
@@ -1613,4 +1653,100 @@ input[type='range'] {
   text-align: center;
   color: var(--text-muted);
   font-size: 11px;
+}
+
+/* Action Studio modular card & step header styles */
+.step-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: #120e29;
+  border: 1px solid #31285c;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.step-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.step-type-badge {
+  font-size: 8px;
+  font-family: 'Press Start 2P', monospace;
+  padding: 2px 5px;
+  border-radius: 3px;
+  margin-left: 6px;
+}
+
+.step-type-badge.single {
+  background: #1e3a5f;
+  color: #60a5fa;
+  border: 1px solid #3b82f6;
+}
+
+.step-type-badge.group {
+  background: #581c87;
+  color: #e9d5ff;
+  border: 1px solid #a855f7;
+}
+
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #241d3f;
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+}
+
+.card-header-row h4 {
+  margin: 0;
+  border-bottom: none !important;
+  padding-bottom: 0 !important;
+}
+
+.btn-card-delete {
+  background: #3b111a;
+  border: 1px solid #7f1d1d;
+  color: #fca5a5;
+  font-size: 9px;
+  font-weight: bold;
+  padding: 3px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-card-delete:hover {
+  background: #991b1b;
+  color: #fff;
+}
+
+.radio-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #c7d2fe;
+  cursor: pointer;
+}
+
+.actor-group {
+  border-left: 3px solid #22c55e;
+}
+
+.enemies-group {
+  border-left: 3px solid #ef4444;
 }

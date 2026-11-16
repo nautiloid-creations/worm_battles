@@ -9,8 +9,8 @@ export type WarpEffectType =
 export interface WarpConfig {
   type: WarpEffectType;
   target: 'background' | 'all';
-  amplitude: number; // Max horizontal pixel displacement
-  frequency: number; // Wave density (cycles per pixel)
+  amplitude: number; // Max horizontal displacement (% canvas width)
+  frequency: number; // Wave density
   speed: number; // Wave travel velocity
   centerX?: number; // 0..1 normalized center X for radial/vortex
   centerY?: number; // 0..1 normalized center Y for radial/vortex
@@ -77,7 +77,7 @@ export class RasterWarpManager {
         this.renderVoidVortex(dstCtx, w, h, timeMs, config);
         break;
       case 'screen_melt':
-        this.renderScreenMelt(dstCtx, w, h, config);
+        this.renderScreenMelt(dstCtx, w, h, timeMs, config);
         break;
       default:
         dstCtx.drawImage(src, 0, 0, w, h);
@@ -96,8 +96,10 @@ export class RasterWarpManager {
     config: WarpConfig
   ): void {
     const { amplitude, frequency, speed } = config;
+    const ampPx = (amplitude / 100) * w;
+    const effFreq = frequency * (180 / h);
     for (let y = 0; y < h; y++) {
-      const xOffset = Math.round(amplitude * Math.sin(y * frequency + timeMs * speed));
+      const xOffset = Math.round(ampPx * Math.sin(y * effFreq + timeMs * speed));
       dstCtx.drawImage(this.offscreen, 0, y, w, 1, xOffset, y, w, 1);
     }
   }
@@ -114,6 +116,8 @@ export class RasterWarpManager {
   ): void {
     const { amplitude, frequency, speed } = config;
     const horizonY = Math.round(h * 0.48);
+    const ampPx = (amplitude / 100) * w;
+    const effFreq = frequency * (180 / h);
 
     // Sky is stable
     if (horizonY > 0) {
@@ -123,7 +127,7 @@ export class RasterWarpManager {
     // Ground shimmers
     for (let y = horizonY; y < h; y++) {
       const depth = (y - horizonY) / (h - horizonY);
-      const xOffset = Math.round(amplitude * depth * Math.sin(y * frequency + timeMs * speed));
+      const xOffset = Math.round(ampPx * depth * Math.sin(y * effFreq + timeMs * speed));
       dstCtx.drawImage(this.offscreen, 0, y, w, 1, xOffset, y, w, 1);
     }
   }
@@ -141,7 +145,8 @@ export class RasterWarpManager {
     const progress = Math.max(0, Math.min(1, config.progress ?? 0.5));
     const maxRadius = Math.sqrt(w * w + h * h) * 0.6;
     const currentRadius = progress * maxRadius;
-    const ringThickness = 18;
+    const ringThickness = 0.1 * h;
+    const ampPx = (config.amplitude / 100) * w;
 
     // Fast slice approximation: warp horizontal scanlines near the shockwave radius
     for (let y = 0; y < h; y++) {
@@ -150,7 +155,7 @@ export class RasterWarpManager {
       if (absDy < currentRadius + ringThickness && absDy > currentRadius - ringThickness) {
         const ringDist = Math.abs(absDy - currentRadius);
         const factor = 1 - ringDist / ringThickness;
-        const xOffset = Math.round(config.amplitude * factor * (dy > 0 ? 1 : -1));
+        const xOffset = Math.round(ampPx * factor * (dy > 0 ? 1 : -1));
         dstCtx.drawImage(this.offscreen, 0, y, w, 1, xOffset, y, w, 1);
       } else {
         dstCtx.drawImage(this.offscreen, 0, y, w, 1, 0, y, w, 1);
@@ -170,32 +175,52 @@ export class RasterWarpManager {
   ): void {
     const cy = (config.centerY ?? 0.6) * h;
     const { amplitude, speed } = config;
+    const ampPx = (amplitude / 100) * w;
+    const effFreq = 0.08 * (180 / h);
 
     for (let y = 0; y < h; y++) {
       const dy = y - cy;
       const dist = Math.abs(dy);
       const pull = Math.max(0, 1 - dist / (h * 0.4));
-      const swirl = Math.sin(dist * 0.08 - timeMs * speed);
-      const xOffset = Math.round(amplitude * pull * swirl * (dy < 0 ? -1 : 1));
+      const swirl = Math.sin(dist * effFreq - timeMs * speed);
+      const xOffset = Math.round(ampPx * pull * swirl * (dy < 0 ? -1 : 1));
       dstCtx.drawImage(this.offscreen, 0, y, w, 1, xOffset, y, w, 1);
     }
   }
 
   /**
    * Classic DOOM screen melt: vertical strips drip downward at staggered speeds.
+   * - amplitude: how far apart vertically individual columns' melting points can be (% canvas height)
+   * - frequency: column strip width in pixels
+   * - speed: descent speed velocity
    */
   private renderScreenMelt(
     dstCtx: CanvasRenderingContext2D,
     w: number,
     h: number,
+    timeMs: number,
     config: WarpConfig
   ): void {
-    const progress = config.progress ?? 0.5;
-    for (let x = 0; x < w; x++) {
-      const offsetFrac = this.meltOffsets[x] ?? 0;
-      const columnProgress = Math.max(0, Math.min(1, (progress - offsetFrac) / 0.6));
-      const yOffset = Math.round(columnProgress * h);
-      dstCtx.drawImage(this.offscreen, x, 0, 1, h, x, yOffset, 1, h);
+    const { amplitude, frequency, speed } = config;
+    const staggerPx = Math.max(1, (amplitude / 100) * h);
+    // Frequency modulates column strip width (e.g. 1px to ~20px)
+    const colWidth = Math.max(1, Math.round(frequency * 100));
+
+    // Clear destination
+    dstCtx.clearRect(0, 0, w, h);
+
+    const totalTravel = h + staggerPx;
+    const baseProgress = config.progress !== undefined ? config.progress : ((timeMs * speed * 0.05) % 1.0);
+    const dropDist = baseProgress * totalTravel;
+
+    for (let x = 0; x < w; x += colWidth) {
+      const actualW = Math.min(colWidth, w - x);
+      const colIdx = Math.floor(x / colWidth);
+      const rand = Math.abs(Math.sin(colIdx * 127.1 + 311.7) * 43758.5453) % 1;
+      const columnStagger = rand * staggerPx;
+      const yOffset = Math.max(0, Math.min(h, Math.round(dropDist - columnStagger)));
+
+      dstCtx.drawImage(this.offscreen, x, 0, actualW, h, x, yOffset, actualW, h);
     }
   }
 }

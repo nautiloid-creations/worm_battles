@@ -15,7 +15,7 @@
       "warp": {
         "type": "heat_shimmer",
         "target": "background",
-        "amplitude": 24,
+        "amplitude": 7.5,
         "frequency": 0.065,
         "speed": 0.015,
         "durationMs": 3000
@@ -23,7 +23,7 @@
       "spawnFx": {
         "fxId": "fx_orb_fire",
         "paletteName": "Dark Flame",
-        "size": 112,
+        "size": 62,
         "xFrac": 0.45,
         "yFrac": 0.65,
         "facing": "left",
