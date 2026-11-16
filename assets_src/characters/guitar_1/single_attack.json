@@ -1,0 +1,84 @@
+{
+  "actorId": "hero_guitar_1",
+  "name": "Hero Guitar 1 single attack",
+  "durationMs": 1800,
+  "keyframes": [
+    {
+      "timeMs": 0,
+      "type": "single",
+      "actor": {
+        "pose": "active_1",
+        "xOffset": 0,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 0.5
+      }
+    },
+    {
+      "timeMs": 300,
+      "type": "single"
+    },
+    {
+      "timeMs": 400,
+      "type": "single",
+      "actor": {
+        "pose": "active_2",
+        "xOffset": 4,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 0
+      },
+      "sprites": [
+        {
+          "fxId": "fx_note_triplets",
+          "paletteName": "Void Magic",
+          "size": 15,
+          "xFrac": 0.445,
+          "yFrac": 0.615,
+          "type": "projectile",
+          "flipX": false,
+          "rotation": 0,
+          "durationMs": 500,
+          "targetXFrac": 0.7,
+          "targetYFrac": 0.65,
+          "speed": 0.3
+        }
+      ]
+    },
+    {
+      "timeMs": 700,
+      "type": "single",
+      "sprites": [
+        {
+          "fxId": "fx_orb_crackling",
+          "paletteName": "Void Magic",
+          "size": 20,
+          "xFrac": 0.7,
+          "yFrac": 0.65,
+          "type": "static",
+          "flipX": false,
+          "rotation": 0,
+          "durationMs": 1000
+        }
+      ]
+    },
+    {
+      "timeMs": 1000,
+      "type": "single"
+    },
+    {
+      "timeMs": 1200,
+      "type": "single",
+      "actor": {
+        "pose": "active_1",
+        "xOffset": 0,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 0
+      }
+    }
+  ]
+}

@@ -6,3 +6,4 @@ dist/
 .gemini_image_quota.json
 scratch_*.mjs
 scratch*.mjs
+_prompt_scratchpad*

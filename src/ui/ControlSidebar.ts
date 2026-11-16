@@ -1,4 +1,9 @@
-import { BattleStage, RESOLUTION_PRESETS } from '../engine/BattleStage';
+import {
+  BattleStage,
+  RESOLUTION_PRESETS,
+  BASE_HERO_SLOT_POSITIONS,
+  BASE_ENEMY_SLOT_POSITIONS,
+} from '../engine/BattleStage';
 import { ActorState, SpriteActor } from '../engine/SpriteActor';
 import { STEM_CHANNELS } from '../audio/AudioConfig';
 import { FX_LIST, FX_PALETTES, FX_SIZES } from '../engine/CombatFxManager';
@@ -13,7 +18,7 @@ import {
 
 const STATES: { key: ActorState; label: string }[] = [
   { key: 'idle', label: 'Idle' },
-  { key: 'attack', label: 'Attack' },
+  { key: 'active', label: 'Active' },
   { key: 'ultimate', label: 'Ultimate' },
   { key: 'hit', label: 'Hit' },
   { key: 'downed', label: 'Down' },
@@ -426,15 +431,6 @@ export class ControlSidebar {
               <span id="attack-tempo-val" class="tempo-display">${Math.round(60000 / this.stage.attackIntervalMs)} BPM (${this.stage.attackIntervalMs}ms)</span>
             </div>
             <input type="range" id="slider-attack-bpm" min="80" max="600" value="${Math.round(60000 / this.stage.attackIntervalMs)}" />
-          </div>
-
-          <!-- Base Lunge Distance -->
-          <div class="setting-item full-width">
-            <div class="setting-label-row">
-              <span>Attack Lunge (% Width):</span>
-              <span id="lunge-val">${this.stage.baseLungePct.toFixed(1)}%</span>
-            </div>
-            <input type="range" id="slider-lunge" min="0" max="25" step="0.5" value="${this.stage.baseLungePct}" title="Double-click to reset to default 7.5%" />
           </div>
 
           <!-- Attack FX Hold-Off -->
@@ -1041,6 +1037,12 @@ export class ControlSidebar {
       const defPct = defaultSizes[hero.config.id] ?? 42.0;
       const currentPct = Math.round(hero.heightFraction * 200) / 2;
 
+      const slotNorm = BASE_HERO_SLOT_POSITIONS[slot];
+      const defaultXPct = Math.round(slotNorm.xFraction * 200) / 2;
+      const defaultYPct = Math.round(slotNorm.yFraction * 200) / 2;
+      const currentXPct = Math.round((hero.customXFraction !== undefined ? hero.customXFraction : slotNorm.xFraction) * 200) / 2;
+      const currentYPct = Math.round((hero.customYFraction !== undefined ? hero.customYFraction : slotNorm.yFraction) * 200) / 2;
+
       col.innerHTML = `
         <div class="col-header">
           <span class="actor-name">${hero.config.name}</span>
@@ -1057,6 +1059,20 @@ export class ControlSidebar {
             <span class="actor-size-val" data-size-val="${hero.config.id}">${currentPct.toFixed(1)}%</span>
           </div>
           <input type="range" class="actor-size-slider" data-size-input="${hero.config.id}" min="15" max="85" step="0.5" value="${currentPct}" title="Double-click to reset to default ${defPct.toFixed(1)}%" />
+        </div>
+        <div class="actor-size-control">
+          <div class="size-label-row">
+            <span>X Pos:</span>
+            <span class="actor-size-val" data-x-val="${hero.config.id}">${currentXPct.toFixed(1)}%</span>
+          </div>
+          <input type="range" class="actor-size-slider" data-x-input="${hero.config.id}" min="0" max="100" step="0.5" value="${currentXPct}" title="Double-click to reset to default ${defaultXPct.toFixed(1)}%" />
+        </div>
+        <div class="actor-size-control">
+          <div class="size-label-row">
+            <span>Y Pos:</span>
+            <span class="actor-size-val" data-y-val="${hero.config.id}">${currentYPct.toFixed(1)}%</span>
+          </div>
+          <input type="range" class="actor-size-slider" data-y-input="${hero.config.id}" min="0" max="100" step="0.5" value="${currentYPct}" title="Double-click to reset to default ${defaultYPct.toFixed(1)}%" />
         </div>
       `;
 
@@ -1091,6 +1107,52 @@ export class ControlSidebar {
         sizeSlider.dispatchEvent(new Event('input'));
       });
 
+      // 3. X Position Slider
+      const xSlider = col.querySelector<HTMLInputElement>(`[data-x-input="${hero.config.id}"]`)!;
+      const xValDisplay = col.querySelector<HTMLElement>(`[data-x-val="${hero.config.id}"]`)!;
+      xSlider.addEventListener('input', () => {
+        const pct = Math.round(Number(xSlider.value) * 2) / 2;
+        hero.customXFraction = pct / 100;
+        const newX = Math.round(hero.customXFraction * this.stage.canvas.width);
+        hero.config.homeX = newX;
+        hero.currentX = newX;
+        xValDisplay.textContent = `${pct.toFixed(1)}%`;
+      });
+      xSlider.addEventListener('dblclick', () => {
+        delete hero.customXFraction;
+        const curSlot = this.stage.heroSlots.get(hero.config.id) || 'front';
+        const norm = BASE_HERO_SLOT_POSITIONS[curSlot];
+        const defVal = Math.round(norm.xFraction * 200) / 2;
+        xSlider.value = String(defVal);
+        const newX = Math.round(norm.xFraction * this.stage.canvas.width);
+        hero.config.homeX = newX;
+        hero.currentX = newX;
+        xValDisplay.textContent = `${defVal.toFixed(1)}%`;
+      });
+
+      // 4. Y Position Slider
+      const ySlider = col.querySelector<HTMLInputElement>(`[data-y-input="${hero.config.id}"]`)!;
+      const yValDisplay = col.querySelector<HTMLElement>(`[data-y-val="${hero.config.id}"]`)!;
+      ySlider.addEventListener('input', () => {
+        const pct = Math.round(Number(ySlider.value) * 2) / 2;
+        hero.customYFraction = pct / 100;
+        const newY = Math.round(hero.customYFraction * this.stage.canvas.height);
+        hero.config.homeY = newY;
+        hero.currentY = newY;
+        yValDisplay.textContent = `${pct.toFixed(1)}%`;
+      });
+      ySlider.addEventListener('dblclick', () => {
+        delete hero.customYFraction;
+        const curSlot = this.stage.heroSlots.get(hero.config.id) || 'front';
+        const norm = BASE_HERO_SLOT_POSITIONS[curSlot];
+        const defVal = Math.round(norm.yFraction * 200) / 2;
+        ySlider.value = String(defVal);
+        const newY = Math.round(norm.yFraction * this.stage.canvas.height);
+        hero.config.homeY = newY;
+        hero.currentY = newY;
+        yValDisplay.textContent = `${defVal.toFixed(1)}%`;
+      });
+
       this.heroStateBtns.set(hero.config.id, btnMap);
       this.heroActiveLabels.set(
         hero.config.id,
@@ -1122,6 +1184,12 @@ export class ControlSidebar {
       const defPct = enemy.config.folderPath.includes('air_squid') ? 75.0 : 55.0;
       const currentPct = Math.round(enemy.heightFraction * 200) / 2;
 
+      const slotNorm = BASE_ENEMY_SLOT_POSITIONS[idx] || BASE_ENEMY_SLOT_POSITIONS[0];
+      const defaultXPct = Math.round(slotNorm.xFraction * 200) / 2;
+      const defaultYPct = Math.round(slotNorm.yFraction * 200) / 2;
+      const currentXPct = Math.round((enemy.customXFraction !== undefined ? enemy.customXFraction : slotNorm.xFraction) * 200) / 2;
+      const currentYPct = Math.round((enemy.customYFraction !== undefined ? enemy.customYFraction : slotNorm.yFraction) * 200) / 2;
+
       col.innerHTML = `
         <div class="col-header enemy-header">
           <span class="actor-name">${enemy.config.name}</span>
@@ -1142,6 +1210,20 @@ export class ControlSidebar {
             <span class="actor-size-val" data-size-val="${enemy.config.id}">${currentPct.toFixed(1)}%</span>
           </div>
           <input type="range" class="actor-size-slider" data-size-input="${enemy.config.id}" min="15" max="85" step="0.5" value="${currentPct}" title="Double-click to reset to default ${defPct.toFixed(1)}%" />
+        </div>
+        <div class="actor-size-control">
+          <div class="size-label-row">
+            <span>X Pos:</span>
+            <span class="actor-size-val" data-x-val="${enemy.config.id}">${currentXPct.toFixed(1)}%</span>
+          </div>
+          <input type="range" class="actor-size-slider" data-x-input="${enemy.config.id}" min="0" max="100" step="0.5" value="${currentXPct}" title="Double-click to reset to default ${defaultXPct.toFixed(1)}%" />
+        </div>
+        <div class="actor-size-control">
+          <div class="size-label-row">
+            <span>Y Pos:</span>
+            <span class="actor-size-val" data-y-val="${enemy.config.id}">${currentYPct.toFixed(1)}%</span>
+          </div>
+          <input type="range" class="actor-size-slider" data-y-input="${enemy.config.id}" min="0" max="100" step="0.5" value="${currentYPct}" title="Double-click to reset to default ${defaultYPct.toFixed(1)}%" />
         </div>
       `;
 
@@ -1183,6 +1265,50 @@ export class ControlSidebar {
       sizeSlider.addEventListener('dblclick', () => {
         sizeSlider.value = String(defPct);
         sizeSlider.dispatchEvent(new Event('input'));
+      });
+
+      // 4. X Position Slider
+      const xSlider = col.querySelector<HTMLInputElement>(`[data-x-input="${enemy.config.id}"]`)!;
+      const xValDisplay = col.querySelector<HTMLElement>(`[data-x-val="${enemy.config.id}"]`)!;
+      xSlider.addEventListener('input', () => {
+        const pct = Math.round(Number(xSlider.value) * 2) / 2;
+        enemy.customXFraction = pct / 100;
+        const newX = Math.round(enemy.customXFraction * this.stage.canvas.width);
+        enemy.config.homeX = newX;
+        enemy.currentX = newX;
+        xValDisplay.textContent = `${pct.toFixed(1)}%`;
+      });
+      xSlider.addEventListener('dblclick', () => {
+        delete enemy.customXFraction;
+        const norm = BASE_ENEMY_SLOT_POSITIONS[idx] || BASE_ENEMY_SLOT_POSITIONS[0];
+        const defVal = Math.round(norm.xFraction * 200) / 2;
+        xSlider.value = String(defVal);
+        const newX = Math.round(norm.xFraction * this.stage.canvas.width);
+        enemy.config.homeX = newX;
+        enemy.currentX = newX;
+        xValDisplay.textContent = `${defVal.toFixed(1)}%`;
+      });
+
+      // 5. Y Position Slider
+      const ySlider = col.querySelector<HTMLInputElement>(`[data-y-input="${enemy.config.id}"]`)!;
+      const yValDisplay = col.querySelector<HTMLElement>(`[data-y-val="${enemy.config.id}"]`)!;
+      ySlider.addEventListener('input', () => {
+        const pct = Math.round(Number(ySlider.value) * 2) / 2;
+        enemy.customYFraction = pct / 100;
+        const newY = Math.round(enemy.customYFraction * this.stage.canvas.height);
+        enemy.config.homeY = newY;
+        enemy.currentY = newY;
+        yValDisplay.textContent = `${pct.toFixed(1)}%`;
+      });
+      ySlider.addEventListener('dblclick', () => {
+        delete enemy.customYFraction;
+        const norm = BASE_ENEMY_SLOT_POSITIONS[idx] || BASE_ENEMY_SLOT_POSITIONS[0];
+        const defVal = Math.round(norm.yFraction * 200) / 2;
+        ySlider.value = String(defVal);
+        const newY = Math.round(norm.yFraction * this.stage.canvas.height);
+        enemy.config.homeY = newY;
+        enemy.currentY = newY;
+        yValDisplay.textContent = `${defVal.toFixed(1)}%`;
       });
 
       this.enemyStateBtns.set(enemy.config.id, btnMap);
@@ -1490,7 +1616,6 @@ export class ControlSidebar {
           resKey: resSelect.value,
           idleBpm: Number(idleSlider.value),
           attackBpm: Number(attackSlider.value),
-          lungePct: parseFloat(lungeSlider.value) || 7.5,
           autoHit: autoHitCheckbox.checked,
           attackFxHoldOffMs: Number(fxHoldOffSlider.value),
         });
@@ -1538,20 +1663,6 @@ export class ControlSidebar {
       const ms = Math.round(60000 / bpm);
       attackVal.textContent = `${bpm} BPM (${ms}ms)`;
       this.stage.setAttackTempo(bpm);
-    });
-
-    // Lunge Distance Slider
-    const lungeSlider = this.container.querySelector<HTMLInputElement>('#slider-lunge')!;
-    const lungeVal = this.container.querySelector<HTMLElement>('#lunge-val')!;
-    lungeSlider.addEventListener('input', () => {
-      const val = parseFloat(lungeSlider.value) || 0;
-      const rounded = Math.round(val * 2) / 2;
-      lungeVal.textContent = `${rounded.toFixed(1)}%`;
-      this.stage.setBaseLungePct(rounded);
-    });
-    lungeSlider.addEventListener('dblclick', () => {
-      lungeSlider.value = '7.5';
-      lungeSlider.dispatchEvent(new Event('input'));
     });
 
     // Auto-hit checkbox

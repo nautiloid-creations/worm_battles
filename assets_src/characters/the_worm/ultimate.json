@@ -32,7 +32,7 @@
     },
     {
       "timeMs": 2400,
-      "actorPose": "attack_1",
+      "actorPose": "active_1",
       "flashWhite": true,
       "bossReaction": "idle",
       "screenShake": {

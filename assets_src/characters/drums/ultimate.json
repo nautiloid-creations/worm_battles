@@ -140,7 +140,7 @@
     },
     {
       "timeMs": 3000,
-      "actorPose": "attack_1",
+      "actorPose": "active_1",
       "spawnFx": {
         "fxId": "fx_fireball",
         "paletteName": "Dark Flame",
@@ -162,7 +162,7 @@
     },
     {
       "timeMs": 3150,
-      "actorPose": "attack_2",
+      "actorPose": "active_2",
       "spawnFx": {
         "fxId": "fx_fireball",
         "paletteName": "Dark Flame",
@@ -183,7 +183,7 @@
     },
     {
       "timeMs": 3300,
-      "actorPose": "attack_1",
+      "actorPose": "active_1",
       "spawnFx": {
         "fxId": "fx_fireball",
         "paletteName": "Dark Flame",
@@ -204,7 +204,7 @@
     },
     {
       "timeMs": 3450,
-      "actorPose": "attack_2",
+      "actorPose": "active_2",
       "actorXOffset": 0,
       "actorYOffset": 0,
       "dimArena": 0.5,
@@ -228,7 +228,7 @@
     },
     {
       "timeMs": 3600,
-      "actorPose": "attack_1",
+      "actorPose": "active_1",
       "actorXOffset": 0,
       "actorYOffset": 0,
       "dimArena": 0.5,
@@ -252,7 +252,7 @@
     },
     {
       "timeMs": 3750,
-      "actorPose": "attack_2",
+      "actorPose": "active_2",
       "actorXOffset": 0,
       "actorYOffset": 0,
       "dimArena": 0.5,

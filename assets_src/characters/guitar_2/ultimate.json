@@ -25,7 +25,7 @@
     },
     {
       "timeMs": 1200,
-      "actorPose": "attack_1",
+      "actorPose": "active_1",
       "actorXOffset": 9.4,
       "spawnFx": {
         "fxId": "fx_orb_lightning",
@@ -43,7 +43,7 @@
     },
     {
       "timeMs": 2300,
-      "actorPose": "attack_2",
+      "actorPose": "active_2",
       "actorXOffset": 11.3,
       "flashWhite": true,
       "bossReaction": "hit",

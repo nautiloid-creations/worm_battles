@@ -31,7 +31,7 @@
     },
     {
       "timeMs": 2000,
-      "actorPose": "attack_1",
+      "actorPose": "active_1",
       "actorXOffset": 7.8,
       "flashWhite": true,
       "bossReaction": "hit",

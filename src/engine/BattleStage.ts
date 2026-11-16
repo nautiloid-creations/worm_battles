@@ -305,24 +305,26 @@ export class BattleStage {
       const hero = this.heroes.find((h) => h.config.id === id);
       if (hero) {
         const norm = BASE_HERO_SLOT_POSITIONS[slot];
-        const newX = Math.round(norm.xFraction * preset.width);
-        const newY = Math.round(norm.yFraction * preset.height);
+        const xFrac = hero.customXFraction !== undefined ? hero.customXFraction : norm.xFraction;
+        const yFrac = hero.customYFraction !== undefined ? hero.customYFraction : norm.yFraction;
+        const newX = Math.round(xFrac * preset.width);
+        const newY = Math.round(yFrac * preset.height);
         hero.setHome(newX, newY);
         hero.currentX = newX;
         hero.currentY = newY;
-        hero.config.lungeDistance = Math.round((this.baseLungePct / 100) * preset.width);
       }
     }
 
     // Update enemy positions
     this.enemies.forEach((enemy, idx) => {
       const norm = BASE_ENEMY_SLOT_POSITIONS[idx] || BASE_ENEMY_SLOT_POSITIONS[0];
-      const newX = Math.round(norm.xFraction * preset.width);
-      const newY = Math.round(norm.yFraction * preset.height);
+      const xFrac = enemy.customXFraction !== undefined ? enemy.customXFraction : norm.xFraction;
+      const yFrac = enemy.customYFraction !== undefined ? enemy.customYFraction : norm.yFraction;
+      const newX = Math.round(xFrac * preset.width);
+      const newY = Math.round(yFrac * preset.height);
       enemy.setHome(newX, newY);
       enemy.currentX = newX;
       enemy.currentY = newY;
-      enemy.config.lungeDistance = Math.round((this.baseLungePct / 100) * preset.width);
     });
   }
 
@@ -474,8 +476,10 @@ export class BattleStage {
       const displacedHero = this.heroes.find((h) => h.config.id === frontHeroId);
       if (displacedHero) {
         const normNew = BASE_HERO_SLOT_POSITIONS[currentSlot];
-        const newX = Math.round(normNew.xFraction * this.canvas.width);
-        const newY = Math.round(normNew.yFraction * this.canvas.height);
+        const xFrac = displacedHero.customXFraction !== undefined ? displacedHero.customXFraction : normNew.xFraction;
+        const yFrac = displacedHero.customYFraction !== undefined ? displacedHero.customYFraction : normNew.yFraction;
+        const newX = Math.round(xFrac * this.canvas.width);
+        const newY = Math.round(yFrac * this.canvas.height);
         displacedHero.setHome(newX, newY);
         displacedHero.currentX = newX;
         displacedHero.currentY = newY;
@@ -484,11 +488,17 @@ export class BattleStage {
       const hero = this.heroes.find((h) => h.config.id === heroId);
       if (hero) {
         const normFront = BASE_HERO_SLOT_POSITIONS['front'];
-        const frontX = Math.round(normFront.xFraction * this.canvas.width);
-        const frontY = Math.round(normFront.yFraction * this.canvas.height);
+        const xFrac = hero.customXFraction !== undefined ? hero.customXFraction : normFront.xFraction;
+        const yFrac = hero.customYFraction !== undefined ? hero.customYFraction : normFront.yFraction;
+        const frontX = Math.round(xFrac * this.canvas.width);
+        const frontY = Math.round(yFrac * this.canvas.height);
         hero.setHome(frontX, frontY);
         hero.currentX = frontX;
         hero.currentY = frontY;
+      }
+
+      if (!this.isUltimateStudioMode) {
+        this.handleFrontHeroChanged(frontHeroId, heroId);
       }
     }
   }

@@ -9,7 +9,7 @@ export interface ActiveArenaFx {
   speed?: number; // px per ms
   facing: 'right' | 'left';
   flipX?: boolean;
-  rotation?: 0 | -90 | 90;
+  rotation?: 0 | 90 | 180 | 270;
   lifeMs: number;
   maxLifeMs: number;
 }
@@ -51,15 +51,26 @@ export const FX_PALETTES: Record<string, [number, number, number][]> = {
 };
 
 export const FX_LIST = [
+  // Elemental & Energy
   { id: 'fx_fireball', label: 'Fireball' },
+  { id: 'fx_branching_lightning', label: 'Branching Lightning' },
+  { id: 'fx_energy_arc', label: 'Energy Arc' },
+  { id: 'fx_stormcloud', label: 'Stormcloud' },
   { id: 'fx_orb_crackling', label: 'Crackling Orb' },
   { id: 'fx_orb_lightning', label: 'Lightning Orb' },
   { id: 'fx_orb_fire', label: 'Fire Orb' },
+  // Musical Weapons
+  { id: 'fx_note_bassclef', label: 'Bass Clef Sword' },
+  { id: 'fx_note_trebleclef', label: 'Treble Clef Blade' },
   { id: 'fx_note_quarter', label: 'Quarter Mace' },
-  { id: 'fx_note_eighth_pair', label: 'Eighth Axes' },
-  { id: 'fx_note_triplet', label: 'Triplet Flanged' },
+  { id: 'fx_note_eighths', label: 'Eighth Axes' },
+  { id: 'fx_note_triplets', label: 'Triplet Flanged' },
+  { id: 'fx_note_sixteenths', label: 'Sixteenth Sawblades' },
   { id: 'fx_rest_quarter', label: 'Rest Dagger' },
   { id: 'fx_rest_eighth', label: 'Rest Scythe' },
+  { id: 'fx_accidental_flat', label: 'Flat Hatchet' },
+  { id: 'fx_accidental_sharp', label: 'Sharp Throwing Weapon' },
+  { id: 'fx_repeat_sign', label: 'Repeat Sign Blade' },
 ];
 
 export const FX_SIZES = [
@@ -105,7 +116,8 @@ export class CombatFxManager {
     const cached = this.cache.get(cacheKey);
     if (cached) return cached;
 
-    const baseImg = this.baseImages.get(fxId);
+    const resolvedFxId = fxId === 'fx_note_eighth_pair' ? 'fx_note_eighths' : fxId === 'fx_note_triplet' ? 'fx_note_triplets' : fxId;
+    const baseImg = this.baseImages.get(resolvedFxId) || this.baseImages.get(fxId);
     if (!baseImg || !baseImg.naturalWidth || !baseImg.naturalHeight) return null;
 
     const ramp = FX_PALETTES[paletteName] || FX_PALETTES['Solar Flame'];
@@ -204,7 +216,7 @@ export class CombatFxManager {
     targetY?: number,
     speed?: number,
     flipX?: boolean,
-    rotation?: 0 | -90 | 90
+    rotation?: 0 | 90 | 180 | 270
   ): void {
     this.activeEffects.push({
       fxId,

@@ -15,7 +15,7 @@ export interface ActionActorCard {
   xOffset: number; // % canvas width
   yOffset: number; // % canvas height
   flipX: boolean;
-  rotation: 0 | -90 | 90;
+  rotation: 0 | 90 | 180 | 270;
   shake?: number; // % canvas height
 }
 
@@ -35,7 +35,7 @@ export interface ActionArenaCard {
 export interface ActionSpriteCard extends UltimateFxDef {
   type?: 'static' | 'projectile';
   flipX?: boolean;
-  rotation?: 0 | -90 | 90;
+  rotation?: 0 | 90 | 180 | 270;
 }
 
 export interface ActionStep {
@@ -53,7 +53,7 @@ export interface ActionStep {
   actorYOffset?: number;
   actorShake?: number;
   actorFlipX?: boolean;
-  actorRotation?: 0 | -90 | 90;
+  actorRotation?: 0 | 90 | 180 | 270;
   dimArena?: number;
   flashWhite?: boolean;
   bossReaction?: 'hit' | 'idle' | 'downed';
@@ -77,7 +77,7 @@ export interface UltimateFxDef {
   speed?: number; // px per ms (at 180p scale)
   facing?: 'right' | 'left';
   flipX?: boolean;
-  rotation?: 0 | -90 | 90;
+  rotation?: 0 | 90 | 180 | 270;
   durationMs: number;
 }
 
@@ -101,14 +101,14 @@ export class UltimateSequencer {
   public currentActorXOffset = 0;
   public currentActorYOffset = 0;
   public currentActorFlipX = false;
-  public currentActorRotation: 0 | -90 | 90 = 0;
+  public currentActorRotation: 0 | 90 | 180 | 270 = 0;
   public currentActorShake = 0;
 
   public currentEnemiesPose?: SpriteKey;
   public currentEnemiesXOffset = 0;
   public currentEnemiesYOffset = 0;
   public currentEnemiesFlipX = false;
-  public currentEnemiesRotation: 0 | -90 | 90 = 0;
+  public currentEnemiesRotation: 0 | 90 | 180 | 270 = 0;
   public currentEnemiesShake = 0;
 
   public currentDimArena = 0;

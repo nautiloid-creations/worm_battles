@@ -1,0 +1,199 @@
+{
+  "actorId": "hero_guitar_1",
+  "name": "Hero Guitar 1 group attack",
+  "durationMs": 1200,
+  "keyframes": [
+    {
+      "timeMs": 0,
+      "type": "group",
+      "actor": {
+        "pose": "active_1",
+        "xOffset": 0,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 0
+      }
+    },
+    {
+      "timeMs": 100,
+      "type": "group",
+      "actor": {
+        "pose": "active_1",
+        "xOffset": 4,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 0
+      }
+    },
+    {
+      "timeMs": 200,
+      "type": "group",
+      "actor": {
+        "pose": "active_2",
+        "xOffset": 4,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 0
+      },
+      "sprites": [
+        {
+          "fxId": "fx_note_quarter",
+          "paletteName": "Void Magic",
+          "size": 10,
+          "xFrac": 0.42,
+          "yFrac": 0.62,
+          "type": "projectile",
+          "flipX": false,
+          "rotation": 0,
+          "durationMs": 500,
+          "targetXFrac": 0.76,
+          "targetYFrac": 0.6,
+          "speed": 0.5
+        }
+      ]
+    },
+    {
+      "timeMs": 300,
+      "type": "group",
+      "actor": {
+        "pose": "active_1",
+        "xOffset": 4,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 0
+      },
+      "sprites": [
+        {
+          "fxId": "fx_rest_quarter",
+          "paletteName": "Void Magic",
+          "size": 10,
+          "xFrac": 0.42,
+          "yFrac": 0.62,
+          "type": "projectile",
+          "flipX": false,
+          "rotation": 0,
+          "durationMs": 500,
+          "targetXFrac": 0.76,
+          "targetYFrac": 0.7,
+          "speed": 0.5
+        }
+      ]
+    },
+    {
+      "timeMs": 400,
+      "type": "group",
+      "actor": {
+        "pose": "active_2",
+        "xOffset": 4,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 0
+      },
+      "sprites": [
+        {
+          "fxId": "fx_note_triplets",
+          "paletteName": "Void Magic",
+          "size": 10,
+          "xFrac": 0.42,
+          "yFrac": 0.62,
+          "type": "projectile",
+          "flipX": false,
+          "rotation": 0,
+          "durationMs": 500,
+          "targetXFrac": 0.76,
+          "targetYFrac": 0.5,
+          "speed": 0.5
+        }
+      ]
+    },
+    {
+      "timeMs": 500,
+      "type": "group",
+      "actor": {
+        "pose": "active_1",
+        "xOffset": 4,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 0
+      },
+      "sprites": [
+        {
+          "fxId": "fx_rest_eighth",
+          "paletteName": "Void Magic",
+          "size": 10,
+          "xFrac": 0.42,
+          "yFrac": 0.62,
+          "type": "projectile",
+          "flipX": false,
+          "rotation": 0,
+          "durationMs": 500,
+          "targetXFrac": 0.9,
+          "targetYFrac": 0.6,
+          "speed": 0.5
+        }
+      ]
+    },
+    {
+      "timeMs": 600,
+      "type": "group",
+      "actor": {
+        "pose": "active_2",
+        "xOffset": 4,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 0
+      },
+      "sprites": [
+        {
+          "fxId": "fx_note_eighths",
+          "paletteName": "Void Magic",
+          "size": 10,
+          "xFrac": 0.42,
+          "yFrac": 0.62,
+          "type": "projectile",
+          "flipX": false,
+          "rotation": 0,
+          "durationMs": 500,
+          "targetXFrac": 0.9,
+          "targetYFrac": 0.5,
+          "speed": 0.5
+        }
+      ]
+    },
+    {
+      "timeMs": 700,
+      "type": "group",
+      "actor": {
+        "pose": "active_1",
+        "xOffset": 4,
+        "yOffset": 0,
+        "flipX": false,
+        "rotation": 0,
+        "shake": 0
+      },
+      "sprites": [
+        {
+          "fxId": "fx_note_quarter",
+          "paletteName": "Void Magic",
+          "size": 10,
+          "xFrac": 0.42,
+          "yFrac": 0.62,
+          "type": "projectile",
+          "flipX": false,
+          "rotation": 0,
+          "durationMs": 500,
+          "targetXFrac": 0.9,
+          "targetYFrac": 0.7,
+          "speed": 0.5
+        }
+      ]
+    }
+  ]
+}

@@ -435,7 +435,7 @@ export class UltimateStudio {
     // Migrate legacy fields into modular cards if not already set
     if (!step.actor && (step.actorPose || step.actorXOffset !== undefined || step.actorYOffset !== undefined || step.actorShake !== undefined)) {
       step.actor = {
-        pose: step.actorPose || 'attack_1',
+        pose: step.actorPose || 'active_1',
         xOffset: step.actorXOffset || 0,
         yOffset: step.actorYOffset || 0,
         flipX: step.actorFlipX || false,
@@ -504,13 +504,6 @@ export class UltimateStudio {
             <label class="field-label" style="min-width:auto; font-weight:bold; color:#c7d2fe;">Time (ms):</label>
             <input type="number" id="insp-step-time" class="studio-num-input" value="${step.timeMs}" step="50" min="0" />
           </div>
-          <div class="field-row">
-            <label class="field-label" style="min-width:auto; font-weight:bold; color:#c7d2fe;">Type:</label>
-            <select id="insp-step-type" class="studio-select-small">
-              <option value="single" ${step.type !== 'group' ? 'selected' : ''}>Single Target</option>
-              <option value="group" ${step.type === 'group' ? 'selected' : ''}>Group Target</option>
-            </select>
-          </div>
         </div>
 
         <div class="step-header-right">
@@ -573,8 +566,6 @@ export class UltimateStudio {
       'idle_2',
       'active_1',
       'active_2',
-      'attack_1',
-      'attack_2',
       'ultimate_1',
       'ultimate_2',
       'hit',
@@ -629,19 +620,23 @@ export class UltimateStudio {
               <span>0°</span>
             </label>
             <label class="radio-label">
-              <input type="radio" name="actor-rotation-radio" value="-90" ${rot === -90 ? 'checked' : ''} />
-              <span>-90°</span>
-            </label>
-            <label class="radio-label">
               <input type="radio" name="actor-rotation-radio" value="90" ${rot === 90 ? 'checked' : ''} />
               <span>90°</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="actor-rotation-radio" value="180" ${rot === 180 ? 'checked' : ''} />
+              <span>180°</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="actor-rotation-radio" value="270" ${rot === 270 ? 'checked' : ''} />
+              <span>270°</span>
             </label>
           </div>
         </div>
 
         <div class="field-row">
           <label class="field-label">Actor Shake (% Height):</label>
-          <input type="range" id="insp-actor-shake" class="studio-slider" min="0" max="20" step="0.5" value="${actor.shake ?? 0}" title="Double-click to reset to 0%" />
+          <input type="range" id="insp-actor-shake" class="studio-slider" min="0" max="10" step="0.1" value="${actor.shake ?? 0}" title="Double-click to reset to 0%" />
           <span id="insp-actor-shake-val" class="field-val">${(actor.shake ?? 0).toFixed(1)}%</span>
         </div>
       </div>
@@ -705,8 +700,6 @@ export class UltimateStudio {
       'idle_2',
       'active_1',
       'active_2',
-      'attack_1',
-      'attack_2',
       'ultimate_1',
       'ultimate_2',
       'hit',
@@ -761,19 +754,23 @@ export class UltimateStudio {
               <span>0°</span>
             </label>
             <label class="radio-label">
-              <input type="radio" name="enemies-rotation-radio" value="-90" ${rot === -90 ? 'checked' : ''} />
-              <span>-90°</span>
-            </label>
-            <label class="radio-label">
               <input type="radio" name="enemies-rotation-radio" value="90" ${rot === 90 ? 'checked' : ''} />
               <span>90°</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="enemies-rotation-radio" value="180" ${rot === 180 ? 'checked' : ''} />
+              <span>180°</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="enemies-rotation-radio" value="270" ${rot === 270 ? 'checked' : ''} />
+              <span>270°</span>
             </label>
           </div>
         </div>
 
         <div class="field-row">
           <label class="field-label">Enemy Shake (% Height):</label>
-          <input type="range" id="insp-enemies-shake" class="studio-slider" min="0" max="20" step="0.5" value="${enemies.shake ?? 0}" title="Double-click to reset to 0%" />
+          <input type="range" id="insp-enemies-shake" class="studio-slider" min="0" max="10" step="0.1" value="${enemies.shake ?? 0}" title="Double-click to reset to 0%" />
           <span id="insp-enemies-shake-val" class="field-val">${(enemies.shake ?? 0).toFixed(1)}%</span>
         </div>
       </div>
@@ -939,12 +936,16 @@ export class UltimateStudio {
               <span>0°</span>
             </label>
             <label class="radio-label">
-              <input type="radio" name="sprite-rot-${index}" value="-90" ${rot === -90 ? 'checked' : ''} data-sprite-rot-idx="${index}" />
-              <span>-90°</span>
-            </label>
-            <label class="radio-label">
               <input type="radio" name="sprite-rot-${index}" value="90" ${rot === 90 ? 'checked' : ''} data-sprite-rot-idx="${index}" />
               <span>90°</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="sprite-rot-${index}" value="180" ${rot === 180 ? 'checked' : ''} data-sprite-rot-idx="${index}" />
+              <span>180°</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="sprite-rot-${index}" value="270" ${rot === 270 ? 'checked' : ''} data-sprite-rot-idx="${index}" />
+              <span>270°</span>
             </label>
           </div>
         </div>
@@ -969,21 +970,13 @@ export class UltimateStudio {
       this.syncStudioFx(true);
     });
 
-    // 2. Type (single / group)
-    const typeSelect = this.inspectorEl.querySelector<HTMLSelectElement>('#insp-step-type');
-    typeSelect?.addEventListener('change', () => {
-      step.type = typeSelect.value as 'single' | 'group';
-      this.renderKeyframeList();
-      this.sequencer.seek(this.sequencer.currentTimeMs);
-    });
-
-    // 3. Add Effect... Dropdown
+    // 2. Add Effect... Dropdown
     const addEffectSelect = this.inspectorEl.querySelector<HTMLSelectElement>('#insp-add-effect-select');
     addEffectSelect?.addEventListener('change', () => {
       const effect = addEffectSelect.value;
       if (effect === 'actor') {
         step.actor = {
-          pose: 'attack_1',
+          pose: 'active_1',
           xOffset: 0,
           yOffset: 0,
           flipX: false,
@@ -1095,7 +1088,7 @@ export class UltimateStudio {
 
       this.inspectorEl.querySelectorAll('input[name="actor-rotation-radio"]').forEach((radio) => {
         radio.addEventListener('change', (e) => {
-          actor.rotation = parseInt((e.target as HTMLInputElement).value, 10) as 0 | -90 | 90;
+          actor.rotation = parseInt((e.target as HTMLInputElement).value, 10) as 0 | 90 | 180 | 270;
           this.sequencer.seek(this.sequencer.currentTimeMs);
           this.syncStudioFx(true);
         });
@@ -1104,7 +1097,7 @@ export class UltimateStudio {
       const shakeSlider = this.inspectorEl.querySelector<HTMLInputElement>('#insp-actor-shake');
       const shakeVal = this.inspectorEl.querySelector<HTMLElement>('#insp-actor-shake-val');
       shakeSlider?.addEventListener('input', () => {
-        actor.shake = Math.round((parseFloat(shakeSlider.value) || 0) * 2) / 2;
+        actor.shake = Math.round((parseFloat(shakeSlider.value) || 0) * 10) / 10;
         if (shakeVal) shakeVal.textContent = `${actor.shake.toFixed(1)}%`;
         this.sequencer.seek(this.sequencer.currentTimeMs);
         this.syncStudioFx(true);
@@ -1236,7 +1229,7 @@ export class UltimateStudio {
 
       this.inspectorEl.querySelectorAll('input[name="enemies-rotation-radio"]').forEach((radio) => {
         radio.addEventListener('change', (e) => {
-          enemies.rotation = parseInt((e.target as HTMLInputElement).value, 10) as 0 | -90 | 90;
+          enemies.rotation = parseInt((e.target as HTMLInputElement).value, 10) as 0 | 90 | 180 | 270;
           this.sequencer.seek(this.sequencer.currentTimeMs);
           this.syncStudioFx(true);
         });
@@ -1245,7 +1238,7 @@ export class UltimateStudio {
       const shakeSlider = this.inspectorEl.querySelector<HTMLInputElement>('#insp-enemies-shake');
       const shakeVal = this.inspectorEl.querySelector<HTMLElement>('#insp-enemies-shake-val');
       shakeSlider?.addEventListener('input', () => {
-        enemies.shake = Math.round((parseFloat(shakeSlider.value) || 0) * 2) / 2;
+        enemies.shake = Math.round((parseFloat(shakeSlider.value) || 0) * 10) / 10;
         if (shakeVal) shakeVal.textContent = `${enemies.shake.toFixed(1)}%`;
         this.sequencer.seek(this.sequencer.currentTimeMs);
         this.syncStudioFx(true);
@@ -1417,7 +1410,7 @@ export class UltimateStudio {
           const idx = parseInt(radio.getAttribute('data-sprite-rot-idx') || '0', 10);
           const sprite = step.sprites?.[idx];
           if (sprite) {
-            sprite.rotation = parseInt((e.target as HTMLInputElement).value, 10) as 0 | -90 | 90;
+            sprite.rotation = parseInt((e.target as HTMLInputElement).value, 10) as 0 | 90 | 180 | 270;
             this.syncStudioFx(true);
           }
         });
@@ -1478,13 +1471,13 @@ export class UltimateStudio {
     return {
       actorId,
       name: `${charName} ${animLabel}`,
+      type: isGroup ? 'group' : 'single',
       durationMs: isGroup ? 1200 : 1000,
       keyframes: [
         {
           timeMs: 0,
-          type: isGroup ? 'group' : 'single',
           actor: {
-            pose: 'attack_1',
+            pose: 'active_1',
             xOffset: 0,
             yOffset: 0,
             flipX: false,
@@ -1494,9 +1487,8 @@ export class UltimateStudio {
         },
         {
           timeMs: isGroup ? 600 : 500,
-          type: isGroup ? 'group' : 'single',
           actor: {
-            pose: 'attack_2',
+            pose: 'active_2',
             xOffset: isHero ? 6 : -6,
             yOffset: 0,
             flipX: false,
@@ -1509,8 +1501,13 @@ export class UltimateStudio {
   }
 
   private applyLoadedSequence(sequence: UltimateSequence, actorId: string): void {
+    const animKey = this.animationSelect.value;
+    const targetType = animKey === 'single_attack' ? 'single' : 'group';
+    sequence.type = targetType;
+
     this.sequencer.setSequence(sequence);
     this.sequencer.sequence.actorId = actorId;
+    this.sequencer.sequence.type = targetType;
     if (actorId.startsWith('hero_')) {
       this.stage.bringHeroToFront(actorId);
     }

@@ -5,8 +5,6 @@ export type SpriteKey =
   | 'idle_2'
   | 'active_1'
   | 'active_2'
-  | 'attack_1'
-  | 'attack_2'
   | 'hit'
   | 'downed'
   | 'ultimate'
@@ -19,8 +17,6 @@ export const ALL_SPRITE_KEYS: SpriteKey[] = [
   'idle_2',
   'active_1',
   'active_2',
-  'attack_1',
-  'attack_2',
   'hit',
   'downed',
   'ultimate',
@@ -63,7 +59,9 @@ export class SpriteActor {
   public canLunge = true;
   public forcedSpriteKey: SpriteKey | null = null;
   public flipX = false;
-  public rotation: 0 | -90 | 90 = 0;
+  public rotation: 0 | 90 | 180 | 270 = 0;
+  public customXFraction?: number;
+  public customYFraction?: number;
 
   // Loaded HTMLImageElement map + white silhouette canvas cache
   private sprites: Partial<Record<SpriteKey, HTMLImageElement>> = {};
@@ -165,26 +163,6 @@ export class SpriteActor {
 
     await Promise.all(promises);
 
-    // Bidirectional alias between active and attack poses:
-    // If active_1 / active_2 not found on disk, alias to attack_1 / attack_2
-    if (!this.sprites.active_1 && this.sprites.attack_1) {
-      this.sprites.active_1 = this.sprites.attack_1;
-      this.whiteSilhouettes.active_1 = this.whiteSilhouettes.attack_1;
-    }
-    if (!this.sprites.active_2 && this.sprites.attack_2) {
-      this.sprites.active_2 = this.sprites.attack_2;
-      this.whiteSilhouettes.active_2 = this.whiteSilhouettes.attack_2;
-    }
-    // If attack_1 / attack_2 not found on disk, alias to active_1 / active_2 as fallback
-    if (!this.sprites.attack_1 && this.sprites.active_1) {
-      this.sprites.attack_1 = this.sprites.active_1;
-      this.whiteSilhouettes.attack_1 = this.whiteSilhouettes.active_1;
-    }
-    if (!this.sprites.attack_2 && this.sprites.active_2) {
-      this.sprites.attack_2 = this.sprites.active_2;
-      this.whiteSilhouettes.attack_2 = this.whiteSilhouettes.active_2;
-    }
-
     this.isLoaded = true;
   }
 
@@ -267,37 +245,17 @@ export class SpriteActor {
       if (this.sprites[this.forcedSpriteKey]) {
         return this.forcedSpriteKey;
       }
-      // If attack_1 or attack_2 forced but not yet drawn on disk, fall back to active
-      if (this.forcedSpriteKey === 'attack_1') {
-        if (this.sprites.active_1) return 'active_1';
-        return 'idle_1';
-      }
-      if (this.forcedSpriteKey === 'attack_2') {
-        if (this.sprites.active_2) return 'active_2';
-        if (this.sprites.active_1) return 'active_1';
-        return 'idle_1';
-      }
     }
     switch (this.state) {
       case 'idle':
         if (this.frameIndex === 1 && this.sprites.idle_2) return 'idle_2';
         return 'idle_1';
       case 'active':
-        if (this.frameIndex === 1 && (this.sprites.active_2 || this.sprites.attack_2)) {
-          return this.sprites.active_2 ? 'active_2' : 'attack_2';
-        }
-        return this.sprites.active_1 ? 'active_1' : (this.sprites.attack_1 ? 'attack_1' : 'idle_1');
       case 'attack':
-        // Check for dedicated attack pose sequence; if absent, fall back to active
-        if (this.frameIndex === 1) {
-          if (this.sprites.attack_2) return 'attack_2';
-          if (this.sprites.active_2) return 'active_2';
-          if (this.sprites.active_1) return 'active_1';
-          return 'idle_1';
+        if (this.frameIndex === 1 && this.sprites.active_2) {
+          return 'active_2';
         }
-        if (this.sprites.attack_1) return 'attack_1';
-        if (this.sprites.active_1) return 'active_1';
-        return 'idle_1';
+        return this.sprites.active_1 ? 'active_1' : 'idle_1';
       case 'hit':
         return this.sprites.hit ? 'hit' : 'idle_1';
       case 'downed':
@@ -305,8 +263,8 @@ export class SpriteActor {
       case 'ultimate':
         return this.sprites.ultimate
           ? 'ultimate'
-          : this.sprites.attack_1
-          ? 'attack_1'
+          : this.sprites.active_1
+          ? 'active_1'
           : 'idle_1';
     }
   }
@@ -332,10 +290,8 @@ export class SpriteActor {
       }
     }
 
-    // 2. Smooth position lerping for slot swaps and attack/ultimate lunges
-    const isLunging = (this.state === 'attack' || this.state === 'ultimate') && this.canLunge;
-    const dir = this.config.facing === 'right' ? 1 : -1;
-    const targetX = this.config.homeX + (isLunging ? dir * this.config.lungeDistance : 0);
+    // 2. Smooth position lerping for slot swaps and default positioning
+    const targetX = this.config.homeX;
     const targetY = this.config.homeY;
 
     const lerpSpeed = Math.min(1, dtMs * 0.018);

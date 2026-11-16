@@ -1550,6 +1550,98 @@ async function cmdGenerateImage(args) {
   throw new Error(`All image generation endpoints failed. Last error: ${lastError}`);
 }
 
+function cmdSliceFxSheet(args) {
+  const inputPath = path.resolve(args.input || 'assets_src/effects/raw/sheet_new_fx.png');
+  const fxNames = [
+    'fx_branching_lightning',
+    'fx_energy_arc',
+    'fx_stormcloud',
+    'fx_note_bassclef',
+    'fx_note_trebleclef',
+    'fx_note_sixteenths',
+    'fx_accidental_flat',
+    'fx_accidental_sharp',
+    'fx_repeat_sign',
+  ];
+
+  const mastersDir = path.resolve(process.cwd(), 'assets_src/effects/masters');
+  const publicDir = path.resolve(process.cwd(), 'public/assets/effects');
+  fs.mkdirSync(mastersDir, { recursive: true });
+  fs.mkdirSync(publicDir, { recursive: true });
+
+  const { width, height, rgba } = loadImageRGBA(inputPath);
+  removeMagentaBackground(width, height, rgba);
+
+  const cols = 3;
+  const rows = 3;
+  const cellW = Math.floor(width / cols);
+  const cellH = Math.floor(height / rows);
+
+  let idx = 0;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (idx >= fxNames.length) break;
+      const name = fxNames[idx++];
+      const x0 = c * cellW;
+      const x1 = (c + 1) * cellW - 1;
+      const y0 = r * cellH;
+      const y1 = (r + 1) * cellH - 1;
+
+      const box = getTightBounds(width, rgba, x0, x1, y0, y1);
+      if (box.w <= 0 || box.h <= 0) {
+        console.warn(`Warning: No content found in cell (${c}, ${r}) for ${name}`);
+        continue;
+      }
+
+      // Fit sprite inside 128x128 with ~16px padding on all sides (max dim = 96px)
+      const maxDim = Math.max(box.w, box.h);
+      const targetMaxDim = 96;
+      const scale = targetMaxDim / maxDim;
+      const scaledW = Math.max(1, Math.round(box.w * scale));
+      const scaledH = Math.max(1, Math.round(box.h * scale));
+
+      // Extract tight sprite into a buffer
+      const tightBuf = Buffer.alloc(box.w * box.h * 4, 0);
+      for (let sy = 0; sy < box.h; sy++) {
+        for (let sx = 0; sx < box.w; sx++) {
+          const srcIdx = ((box.minY + sy) * width + (box.minX + sx)) * 4;
+          const dstIdx = (sy * box.w + sx) * 4;
+          tightBuf[dstIdx] = rgba[srcIdx];
+          tightBuf[dstIdx + 1] = rgba[srcIdx + 1];
+          tightBuf[dstIdx + 2] = rgba[srcIdx + 2];
+          tightBuf[dstIdx + 3] = rgba[srcIdx + 3];
+        }
+      }
+
+      // Resize tight sprite to scaledW x scaledH
+      const scaledBuf = resizeNearest(box.w, box.h, tightBuf, scaledW, scaledH);
+
+      // Center in 128x128 master canvas
+      const canvasSize = 128;
+      const canvasBuf = Buffer.alloc(canvasSize * canvasSize * 4, 0);
+      const startX = Math.floor((canvasSize - scaledW) / 2);
+      const startY = Math.floor((canvasSize - scaledH) / 2);
+
+      for (let cy = 0; cy < scaledH; cy++) {
+        for (let cx = 0; cx < scaledW; cx++) {
+          const sIdx = (cy * scaledW + cx) * 4;
+          const dIdx = ((startY + cy) * canvasSize + (startX + cx)) * 4;
+          canvasBuf[dIdx] = scaledBuf[sIdx];
+          canvasBuf[dIdx + 1] = scaledBuf[sIdx + 1];
+          canvasBuf[dIdx + 2] = scaledBuf[sIdx + 2];
+          canvasBuf[dIdx + 3] = scaledBuf[sIdx + 3];
+        }
+      }
+
+      const masterPath = path.join(mastersDir, `${name}.png`);
+      const publicPath = path.join(publicDir, `${name}.png`);
+      savePNG(masterPath, canvasSize, canvasSize, canvasBuf);
+      savePNG(publicPath, canvasSize, canvasSize, canvasBuf);
+      console.log(`  ✓ Sliced & saved ${name}.png (128x128, content ${scaledW}x${scaledH})`);
+    }
+  }
+}
+
 // ============================================================================
 // MAIN DISPATCHER
 // ============================================================================
@@ -1560,6 +1652,9 @@ const cmd = args._[0];
 switch (cmd) {
   case 'quota-status':
     cmdQuotaStatus(args);
+    break;
+  case 'slice-fx-sheet':
+    cmdSliceFxSheet(args);
     break;
   case 'generate-image':
     await cmdGenerateImage(args);
